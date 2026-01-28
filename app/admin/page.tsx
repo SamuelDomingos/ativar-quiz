@@ -10,7 +10,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Copy, MoreVertical } from "lucide-react";
 
 const quizzes = [
   { id: "abc123", title: "Quiz JavaScript", createdAt: "10/01/2026" },
@@ -50,28 +64,53 @@ export default function AdminPage() {
                   onClick={() => router.push(`/admin/quiz/${quiz.id}`)}
                 >
                   <TableCell>{quiz.title}</TableCell>
-                  <TableCell>{quiz.id}</TableCell>
+                  <TableCell>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(quiz.id);
+                          }}
+                          variant="outline"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Copiar código</TooltipContent>
+                    </Tooltip>
+                  </TableCell>
                   <TableCell>{quiz.createdAt}</TableCell>
 
                   <TableCell
                     className="text-right space-x-2"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => router.push(`/admin/quiz/${quiz.id}`)}
-                    >
-                      Editar
-                    </Button>
-
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => console.log("Excluir", quiz.id)}
-                    >
-                      Excluir
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              router.push(`/admin/quiz/${quiz.id}`)
+                            }
+                          >
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />{" "}
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => console.log("Excluir", quiz.id)}
+                          >
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
