@@ -31,8 +31,8 @@ model Quiz {
 }
 
 enum QuizStatus {
-  WAITING // usuários podem entrar
-  STARTED // quiz rodando
+  WAITING
+  STARTED
   PAUSED
   FINISHED
 }
