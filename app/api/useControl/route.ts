@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     const result = await validateQuizAccess(idQuiz);
 
     return NextResponse.json(result, {
-      status: result.success ? 200 : 400,
+      status: 200,
     });
   } catch (error) {
     console.error("Erro ao validar acesso ao quiz:", error);
