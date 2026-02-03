@@ -21,6 +21,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useGetId } from "../../_hooks/useAdmin";
+import { useControl } from "./_hooks/useQuizControl";
+import { getStatusBadge } from "./_lib/status";
 
 export default function EditQuizPage() {
   const params = useParams();
@@ -28,11 +30,20 @@ export default function EditQuizPage() {
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
 
   const { data, isLoading } = useGetId(id);
-
+  const { uploadControl, data: controlData } = useControl();
 
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   const [copied, setCopied] = useState(false);
-  const [quizRunning, setQuizRunning] = useState(false);
+  const [quizStatus, setQuizStatus] = useState<
+    "WAITING" | "STARTED" | "PAUSED"
+  >("WAITING");
+  const [isLoading2, setIsLoading2] = useState(false);
+
+  useEffect(() => {
+    if (controlData?.quizStatus) {
+      setQuizStatus(controlData.quizStatus);
+    }
+  }, [controlData]);
 
   useEffect(() => {
     if (!id) return;
@@ -65,6 +76,20 @@ export default function EditQuizPage() {
       console.error("Erro ao copiar:", error);
     }
   };
+
+  const handleControlQuiz = async (status: string) => {
+    try {
+      setIsLoading2(true);
+      await uploadControl({ idQuiz: id, status });
+    } catch (error) {
+      console.error("Erro ao controlar quiz:", error);
+    } finally {
+      setIsLoading2(false);
+    }
+  };
+
+  const statusBadge = getStatusBadge(quizStatus);
+  const IconComponent = statusBadge.Icon;
 
   return (
     <div className="min-h-screen bg-linear-to-br from-background via-background to-background">
@@ -151,47 +176,77 @@ export default function EditQuizPage() {
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-foreground">Status</p>
                   <Badge
-                    variant={quizRunning ? "default" : "secondary"}
-                    className="w-full justify-center py-1.5 text-sm"
+                    variant={statusBadge.variant}
+                    className="w-full justify-center py-2 text-sm font-semibold"
                   >
-                    {quizRunning ? (
-                      <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-2">
+                      {statusBadge.isActive && (
                         <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                        Em andamento
-                      </span>
-                    ) : (
-                      "Pausado"
-                    )}
+                      )}
+                      <IconComponent className="w-4 h-4" />
+                      {statusBadge.label}
+                    </span>
                   </Badge>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" size="lg" title="Abrir Quiz">
-                        <DoorOpen className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Abrir Quiz</TooltipContent>
-                  </Tooltip>
+                <div
+                  className={`grid gap-2 ${
+                    quizStatus === "WAITING" || quizStatus === "STARTED"
+                      ? "grid-cols-2"
+                      : "grid-cols-1"
+                  }`}
+                >
+                  {quizStatus !== "WAITING" && quizStatus !== "STARTED" && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="lg"
+                          title="Abrir Quiz"
+                          onClick={() => handleControlQuiz("open")}
+                          disabled={isLoading2}
+                          className="w-full"
+                        >
+                          <DoorOpen className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Abrir Quiz</TooltipContent>
+                    </Tooltip>
+                  )}
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button size="lg">
-                        <Play className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Iniciar Quiz</TooltipContent>
-                  </Tooltip>
+                  {quizStatus === "WAITING" && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="lg"
+                          title="Iniciar Quiz"
+                          onClick={() => handleControlQuiz("start")}
+                          disabled={isLoading2}
+                          className="w-full"
+                        >
+                          <Play className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Iniciar Quiz</TooltipContent>
+                    </Tooltip>
+                  )}
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" size="lg">
-                        <Pause className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Fechar Quiz</TooltipContent>
-                  </Tooltip>
+                  {quizStatus === "WAITING" && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="destructive"
+                          size="lg"
+                          title="Pausar Quiz"
+                          onClick={() => handleControlQuiz("pause")}
+                          disabled={isLoading2}
+                          className="w-full"
+                        >
+                          <Pause className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Fechar Quiz</TooltipContent>
+                    </Tooltip>
+                  )}
                 </div>
               </CardContent>
             </Card>
