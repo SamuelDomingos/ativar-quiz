@@ -1,3 +1,4 @@
+// _components/questions.tsx
 import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +10,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -26,18 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import QuestionAnswers from "./molecules/questionAnswers";
-
-interface QuestionsProps {
-  form: any;
-  questionIndex: number;
-  question: any;
-  questions: any[];
-  remove: (index: number) => void;
-  move: (from: number, to: number) => void;
-  loading: boolean;
-  deleteQuestionId: string | null;
-  setDeleteQuestionId: (id: string | null) => void;
-}
+import { QuestionCreateManyQuizInput } from "@/lib/generated/prisma/models";
 
 const Questions = ({
   form,
@@ -49,7 +38,17 @@ const Questions = ({
   loading,
   deleteQuestionId,
   setDeleteQuestionId,
-}: QuestionsProps) => {
+}: {
+  form: any;
+  questionIndex: number;
+  question: QuestionCreateManyQuizInput;
+  questions: QuestionCreateManyQuizInput[];
+  remove: (index: number) => void;
+  move: (from: number, to: number) => void;
+  loading: boolean;
+  deleteQuestionId: string | null;
+  setDeleteQuestionId: (id: string | null) => void;
+}) => {
   const questionId = question.id || questionIndex.toString();
 
   return (
@@ -142,25 +141,6 @@ const Questions = ({
           )}
         />
 
-        <FormField
-          control={form.control}
-          name={`questions.${questionIndex}.description`}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Descrição (Opcional)</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Adicione mais contexto à questão"
-                  rows={2}
-                  {...field}
-                  disabled={loading}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -179,8 +159,10 @@ const Questions = ({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="multiple">Múltipla Escolha</SelectItem>
-                    <SelectItem value="true-false">Verdadeiro/Falso</SelectItem>
+                    <SelectItem value="SINGLE_CHOICE">
+                      Múltipla Escolha
+                    </SelectItem>
+                    <SelectItem value="TRUE_FALSE">Verdadeiro/Falso</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -190,7 +172,7 @@ const Questions = ({
 
           <FormField
             control={form.control}
-            name={`questions.${questionIndex}.timeLimit`}
+            name={`questions.${questionIndex}.duration`}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tempo Limite (segundos) *</FormLabel>
@@ -201,6 +183,7 @@ const Questions = ({
                     max="300"
                     {...field}
                     disabled={loading}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
                   />
                 </FormControl>
                 <FormMessage />

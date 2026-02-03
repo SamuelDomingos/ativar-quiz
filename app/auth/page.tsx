@@ -18,6 +18,9 @@ import { Input } from "@/components/ui/input";
 import z from "zod";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { signIn } from "next-auth/react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   email: z.email("Invalid email address."),
@@ -25,6 +28,8 @@ const formSchema = z.object({
 });
 
 export default function AuthPage() {
+  const router = useRouter();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -34,8 +39,19 @@ export default function AuthPage() {
     mode: "onSubmit",
   });
 
-  const onSubmit = (data: z.infer<typeof formSchema>) => {
-    console.log(data);
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+    const result = await signIn("credentials", {
+      email: data.email,
+      password: data.password,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      toast.error(result.error);
+    } else if (result?.ok) {
+      toast.success("Login realizado com sucesso!");
+      router.push("/auth/dashboard");
+    }
   };
 
   return (

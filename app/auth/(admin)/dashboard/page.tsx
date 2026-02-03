@@ -24,23 +24,41 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Copy, MoreVertical } from "lucide-react";
-
-const quizzes = [
-  { id: "abc123", title: "Quiz JavaScript", createdAt: "10/01/2026" },
-  { id: "xyz456", title: "Quiz React", createdAt: "12/01/2026" },
-];
+import { Copy, LogOut, MoreVertical } from "lucide-react";
+import { signOut } from "next-auth/react";
+import { useGetAllQuizzes } from "../_hooks/useAdmin";
 
 export default function AdminPage() {
   const router = useRouter();
 
+  const { data } = useGetAllQuizzes();
+
+  const handleLogout = async () => {
+    await signOut({
+      redirect: true,
+      callbackUrl: "/auth",
+    });
+  };
+
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="default"
+            className="ml-auto block"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Sair</TooltipContent>
+      </Tooltip>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Administração de Quizzes</CardTitle>
 
-          <Button onClick={() => router.push("/admin/quiz/new")}>
+          <Button onClick={() => router.push("/auth/quiz/new")}>
             Criar Quiz
           </Button>
         </CardHeader>
@@ -51,17 +69,23 @@ export default function AdminPage() {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Código</TableHead>
-                <TableHead>Data</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
 
             <TableBody>
-              {quizzes.map((quiz) => (
+              {data && data.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center">
+                    Nenhum quiz criado ainda.
+                  </TableCell>
+                </TableRow>
+              )}
+              {data?.map((quiz) => (
                 <TableRow
                   key={quiz.id}
                   className="cursor-pointer"
-                  onClick={() => router.push(`/admin/quiz/${quiz.id}`)}
+                  onClick={() => router.push(`/auth/quiz/${quiz.id}`)}
                 >
                   <TableCell>{quiz.title}</TableCell>
                   <TableCell>
@@ -80,7 +104,6 @@ export default function AdminPage() {
                       <TooltipContent>Copiar código</TooltipContent>
                     </Tooltip>
                   </TableCell>
-                  <TableCell>{quiz.createdAt}</TableCell>
 
                   <TableCell
                     className="text-right space-x-2"

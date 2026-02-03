@@ -20,26 +20,22 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useGetId } from "../../_hooks/useAdmin";
 
 export default function EditQuizPage() {
   const params = useParams();
   const id = params.id as string;
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+
+  const { data, isLoading } = useGetId(id);
+
 
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
-  const [quizLink, setQuizLink] = useState<string>("");
   const [copied, setCopied] = useState(false);
   const [quizRunning, setQuizRunning] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  const quizData = {
-    title: "Quiz de Conhecimento Geral",
-    description: "Teste seus conhecimentos em diversos assuntos",
-  };
 
   useEffect(() => {
     if (!id) return;
-    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-    const fullLink = `${baseUrl}/quiz/${id}`;
 
     const qrCodeOptions: QRCode.QRCodeToDataURLOptions = {
       errorCorrectionLevel: "H",
@@ -53,17 +49,21 @@ export default function EditQuizPage() {
       },
     };
 
-    QRCode.toDataURL(fullLink, qrCodeOptions).then((url: string) => {
-      setQuizLink(fullLink);
-      setQrCodeUrl(url);
-      setLoading(false);
-    });
-  }, [id]);
+    QRCode.toDataURL(`${baseUrl}/quiz/${id}`, qrCodeOptions).then(
+      (url: string) => {
+        setQrCodeUrl(url);
+      },
+    );
+  }, [id, baseUrl]);
 
   const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(quizLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(`${baseUrl}/quiz/${id}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error("Erro ao copiar:", error);
+    }
   };
 
   return (
@@ -73,10 +73,11 @@ export default function EditQuizPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-foreground tracking-tight">
-                {quizData.title}
+                {data?.title || "Quiz de Conhecimento Geral"}
               </h1>
               <p className="text-muted-foreground mt-1">
-                {quizData.description}
+                {data?.description ||
+                  "Teste seus conhecimentos em diversos assuntos"}
               </p>
             </div>
           </div>
@@ -97,7 +98,7 @@ export default function EditQuizPage() {
               </CardHeader>
               <CardContent className="space-y-8">
                 <div className="flex flex-col items-center p-8 bg-linear-to-br from-secondary to-secondary/80 rounded-xl border border-border">
-                  {loading ? (
+                  {isLoading ? (
                     <div className="w-80 h-80 bg-muted rounded-lg animate-pulse" />
                   ) : (
                     <>
@@ -121,7 +122,7 @@ export default function EditQuizPage() {
                   </label>
                   <div className="flex gap-2">
                     <Input
-                      value={quizLink}
+                      value={`${baseUrl}/quiz/${id}`}
                       readOnly
                       className="bg-secondary border-border text-foreground"
                     />
