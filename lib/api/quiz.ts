@@ -47,6 +47,35 @@ export const getQuizById = async (id: string): Promise<Quiz> => {
   return response.json();
 };
 
+export const getQuizStatus = async (
+  id: string,
+): Promise<{ data: string }> => {
+  const response = await fetch(`/api/quiz/${id}/status`, {
+    method: "GET",
+  });
+  return response.json();
+};
+
+export const getQuestionMonitoringData = async (
+  quizId: string,
+  questionId: string,
+) => {
+  try {
+    const response = await fetch(
+      `/api/quiz/${quizId}/questions/${questionId}/monitor`,
+      {
+        method: "GET",
+      },
+    );
+    const data = await response.json();
+
+    return data.data;
+  } catch (error) {
+    console.error("Erro ao buscar monitoramento:", error);
+    return null;
+  }
+};
+
 export const deleteRegister = async (id: string) => {
   const response = await fetch(`/api/quiz?id=${id}`, {
     method: "DELETE",

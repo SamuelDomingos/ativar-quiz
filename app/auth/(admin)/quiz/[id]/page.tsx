@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Copy, Play, Pause, DoorOpen } from "lucide-react";
+import { Play, Pause, DoorOpen, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,41 +16,31 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useGetId } from "../../_hooks/useAdmin";
+import { useGetQuizStatus } from "../../_hooks/useAdmin";
 import { useControl } from "./_hooks/useQuizControl";
 import { getStatusBadge } from "./_lib/status";
 import QrCode from "@/components/qrCode";
+import Link from "next/link";
 
 export default function EditQuizPage() {
   const params = useParams();
   const id = params.id as string;
 
-  const { data, isLoading } = useGetId(id);
-  const { uploadControl, data: controlData } = useControl();
-
-  const [quizStatus, setQuizStatus] = useState<
-    "WAITING" | "STARTED" | "PAUSED"
-  >("WAITING");
-  const [isLoading2, setIsLoading2] = useState(false);
-
-  useEffect(() => {
-    if (controlData?.quizStatus) {
-      setQuizStatus(controlData.quizStatus);
-    }
-  }, [controlData]);
+  const { data, getStatus } = useGetQuizStatus(id);
+  const currentStatus = data?.data;
+  
+  const { uploadControl, isLoading: isLoadingControl } = useControl();
 
   const handleControlQuiz = async (status: string) => {
     try {
-      setIsLoading2(true);
       await uploadControl({ idQuiz: id, status });
+      setTimeout(() => getStatus(id), 500);
     } catch (error) {
       console.error("Erro ao controlar quiz:", error);
-    } finally {
-      setIsLoading2(false);
     }
   };
 
-  const statusBadge = getStatusBadge(quizStatus);
+  const statusBadge = getStatusBadge(currentStatus || "");
   const IconComponent = statusBadge.Icon;
 
   return (
@@ -61,11 +50,10 @@ export default function EditQuizPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-foreground tracking-tight">
-                {data?.title || "Quiz de Conhecimento Geral"}
+                Quiz
               </h1>
               <p className="text-muted-foreground mt-1">
-                {data?.description ||
-                  "Teste seus conhecimentos em diversos assuntos"}
+                Teste seus conhecimentos em diversos assuntos
               </p>
             </div>
           </div>
@@ -100,22 +88,23 @@ export default function EditQuizPage() {
                     </span>
                   </Badge>
                 </div>
-
                 <div
                   className={`grid gap-2 ${
-                    quizStatus === "WAITING" || quizStatus === "STARTED"
+                    currentStatus === "WAITING"
                       ? "grid-cols-2"
-                      : "grid-cols-1"
+                      : currentStatus === "STARTED"
+                        ? "grid-cols-2"
+                        : "grid-cols-1"
                   }`}
                 >
-                  {quizStatus !== "WAITING" && quizStatus !== "STARTED" && (
+                  {currentStatus !== "WAITING" && currentStatus !== "STARTED" && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
                           size="lg"
                           title="Abrir Quiz"
                           onClick={() => handleControlQuiz("open")}
-                          disabled={isLoading2}
+                          disabled={isLoadingControl}
                           className="w-full"
                         >
                           <DoorOpen className="w-4 h-4" />
@@ -125,14 +114,14 @@ export default function EditQuizPage() {
                     </Tooltip>
                   )}
 
-                  {quizStatus === "WAITING" && (
+                  {currentStatus === "WAITING" && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
                           size="lg"
                           title="Iniciar Quiz"
                           onClick={() => handleControlQuiz("start")}
-                          disabled={isLoading2}
+                          disabled={isLoadingControl}
                           className="w-full"
                         >
                           <Play className="w-4 h-4" />
@@ -142,21 +131,39 @@ export default function EditQuizPage() {
                     </Tooltip>
                   )}
 
-                  {quizStatus === "WAITING" && (
+                  {currentStatus === "STARTED" && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link href={`/auth/quiz/${id}/start`}>
+                          <Button
+                            variant="default"
+                            size="lg"
+                            disabled={isLoadingControl}
+                            className="w-full"
+                          >
+                            <ArrowRight className="w-4 h-4" />
+                          </Button>
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent>Ir para o quiz</TooltipContent>
+                    </Tooltip>
+                  )}
+
+                  {currentStatus === "STARTED" && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          variant="destructive"
+                          variant="outline"
                           size="lg"
                           title="Pausar Quiz"
                           onClick={() => handleControlQuiz("pause")}
-                          disabled={isLoading2}
+                          disabled={isLoadingControl}
                           className="w-full"
                         >
                           <Pause className="w-4 h-4" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Fechar Quiz</TooltipContent>
+                      <TooltipContent>Pausar Quiz</TooltipContent>
                     </Tooltip>
                   )}
                 </div>

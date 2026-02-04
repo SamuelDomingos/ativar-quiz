@@ -1,5 +1,5 @@
 import { useFetch } from "@/hooks/useFetch";
-import { getAllQuizzes, createQuiz, getQuizById } from "@/lib/api/quiz";
+import { getAllQuizzes, createQuiz, getQuizById, getQuizStatus } from "@/lib/api/quiz";
 import { useMemo } from "react";
 
 export const useCreateQuiz = () => {
@@ -45,7 +45,7 @@ export const useGetAllQuizzes = () => {
   };
 };
 
-export const useGetId = (id: string) => {
+export const useGetQuizStatus = (id: string) => {
   const fetchOptions = useMemo(
     () => ({
       auto: true,
@@ -55,14 +55,14 @@ export const useGetId = (id: string) => {
   );
 
   const {
-    execute: getDataId,
+    execute: getStatus,
     data,
     isLoading,
     error,
-  } = useFetch(getQuizById, fetchOptions);
+  } = useFetch(getQuizStatus, fetchOptions);
 
   return {
-    getDataId,
+    getStatus,
     data,
     isLoading,
     error,

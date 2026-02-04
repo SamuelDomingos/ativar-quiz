@@ -1,7 +1,7 @@
 import { Clock, Play, Pause, CheckCircle, HelpCircle } from "lucide-react";
 
 export const getStatusBadge = (
-  quizStatus: string,
+  status: string,
 ): {
   label: string;
   variant: "default" | "secondary" | "outline";
@@ -9,7 +9,7 @@ export const getStatusBadge = (
   isActive?: boolean;
 } => {
     
-  switch (quizStatus) {
+  switch (status) {
     case "WAITING":
       return {
         label: "Aguardando",

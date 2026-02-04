@@ -150,7 +150,40 @@ export const quizService = {
     }
   },
 
-  async getById(id: string): Promise<ServiceResponse<any>> {
+  async getStatus(id: string): Promise<ServiceResponse<any>> {
+    try {
+      if (!id) {
+        return {
+          success: false,
+          error: "ID é obrigatório",
+        };
+      }
+
+      const quiz = await prisma.quiz.findUnique({
+        where: { id },
+      });
+
+      if (!quiz) {
+        return {
+          success: false,
+          error: "Quiz não encontrado",
+        };
+      }
+
+      return {
+        success: true,
+        data: quiz.status,
+      };
+    } catch (error) {
+      console.error("Erro ao buscar quiz:", error);
+      return {
+        success: false,
+        error: "Erro ao buscar quiz",
+      };
+    }
+  },
+
+    async getById(id: string): Promise<ServiceResponse<any>> {
     try {
       if (!id) {
         return {
