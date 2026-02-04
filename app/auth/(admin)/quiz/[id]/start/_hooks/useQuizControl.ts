@@ -1,89 +1,44 @@
-import { useState, useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { quizControlQuestions } from "@/lib/api/control";
+import { QuizWithQuestions } from "@/lib/api/quiz";
 
 interface UseQuizControlReturn {
-  currentQuestionIndex: number;
-  timeLeft: number;
-  isTimerRunning: boolean;
+  handleStartQuiz: () => void;
   handleNextQuestion: () => void;
-  handlePreviousQuestion: () => void;
-  startTimer: () => void;
-  stopTimer: () => void;
-  resetTimer: () => void;
   canGoNext: boolean;
-  canGoPrevious: boolean;
+  isLoading: boolean;
 }
 
-export function useQuizControl(
-  totalQuestions: number,
-  onQuestionChange?: (index: number) => void
-): UseQuizControlReturn {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(30);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
+export function useQuizControl(quiz?: QuizWithQuestions): UseQuizControlReturn {
+  const startMutation = useMutation({
+    mutationFn: () =>
+      quizControlQuestions({
+        idQuiz: quiz?.id || "",
+        action: "start",
+      }),
+  });
 
-  // Timer para contar regressivo
-  useEffect(() => {
-    if (!isTimerRunning) return;
+  const nextMutation = useMutation({
+    mutationFn: () =>
+      quizControlQuestions({
+        idQuiz: quiz?.id || "",
+        action: "next",
+      }),
+  });
 
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          return 30; // Reinicia quando chega a 0
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [isTimerRunning]);
-
-
-  useEffect(() => {
-    setTimeLeft(30);
-    setIsTimerRunning(false);
-    onQuestionChange?.(currentQuestionIndex);
-  }, [currentQuestionIndex, onQuestionChange]);
-
-  const handleNextQuestion = () => {
-    if (currentQuestionIndex < totalQuestions - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-      setIsTimerRunning(true);
-    }
+  const getCurrentIndex = () => {
+    if (!quiz?.currentQuestionId || !quiz?.questions) return -1;
+    return quiz.questions.findIndex((q) => q.id === quiz.currentQuestionId);
   };
 
-  const handlePreviousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
-      setIsTimerRunning(true);
-    }
-  };
-
-  const startTimer = () => {
-    setIsTimerRunning(true);
-  };
-
-  const stopTimer = () => {
-    setIsTimerRunning(false);
-  };
-
-  const resetTimer = () => {
-    setTimeLeft(30);
-    setIsTimerRunning(false);
-  };
-
-  const canGoNext = currentQuestionIndex < totalQuestions - 1;
-  const canGoPrevious = currentQuestionIndex > 0;
+  const currentIndex = getCurrentIndex();
+  const canGoNext =
+    currentIndex >= 0 && currentIndex < (quiz?.questions?.length || 0) - 1;
 
   return {
-    currentQuestionIndex,
-    timeLeft,
-    isTimerRunning,
-    handleNextQuestion,
-    handlePreviousQuestion,
-    startTimer,
-    stopTimer,
-    resetTimer,
+    handleStartQuiz: startMutation.mutate,
+    handleNextQuestion: nextMutation.mutate,
     canGoNext,
-    canGoPrevious,
+    isLoading: startMutation.isPending || nextMutation.isPending,
   };
 }

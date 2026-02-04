@@ -1,5 +1,11 @@
 import { useFetch } from "@/hooks/useFetch";
-import { getAllQuizzes, createQuiz, getQuizById, getQuizStatus } from "@/lib/api/quiz";
+import {
+  getAllQuizzes,
+  createQuiz,
+  getQuizById,
+  getQuizStatus,
+} from "@/lib/api/quiz";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 export const useCreateQuiz = () => {
@@ -46,25 +52,25 @@ export const useGetAllQuizzes = () => {
 };
 
 export const useGetQuizStatus = (id: string) => {
-  const fetchOptions = useMemo(
-    () => ({
-      auto: true,
-      defaultArgs: [id],
-    }),
-    [id],
-  );
-
-  const {
-    execute: getStatus,
-    data,
-    isLoading,
-    error,
-  } = useFetch(getQuizStatus, fetchOptions);
+  const { data, isLoading, error, isFetching, refetch } = useQuery({
+    queryKey: ["quiz", "status", id],
+    queryFn: () => getQuizStatus(id),
+    refetchInterval: (query) => {
+      const status = query.state.data?.data?.status;
+      return status === "STARTED" || status === "WAITING" ? 10000 : false;
+    },
+    refetchIntervalInBackground: true,
+    enabled: !!id,
+    staleTime: 0,
+    gcTime: 1000 * 60 * 5,
+    retry: 1,
+  });
 
   return {
-    getStatus,
+    getStatus: refetch,
     data,
     isLoading,
     error,
+    isFetching,
   };
 };

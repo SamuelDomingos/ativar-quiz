@@ -6,17 +6,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { idQuiz, userName } = body;
 
-    if (!idQuiz || !userName) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "idQuiz e userName são obrigatórios",
-          timestamp: new Date().toISOString(),
-        },
-        { status: 400 },
-      );
-    }
-
     const result = await joinQuizService({
       idQuiz,
       userName,

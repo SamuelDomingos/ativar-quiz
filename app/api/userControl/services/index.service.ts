@@ -70,7 +70,7 @@ export const joinQuizService = async ({
 
     if (existingSession) {
       return {
-        success: false,
+        success: true,
         message: "Você já possui uma sessão ativa neste quiz",
         data: {
           sessionId: existingSession.id,
@@ -125,6 +125,12 @@ export const validateQuizAccess = async (
 
     const canAccess = quiz.status === "WAITING" || quiz.status === "STARTED";
 
+    const participants = await prisma.quizSession.count({
+      where: {
+        quizId: idQuiz,
+      },
+    });
+
     return {
       success: canAccess,
       message: canAccess
@@ -134,6 +140,7 @@ export const validateQuizAccess = async (
         quizId: quiz.id,
         status: quiz.status,
         canAccess,
+        totalParticipants: participants,
       },
       timestamp: new Date().toISOString(),
     };

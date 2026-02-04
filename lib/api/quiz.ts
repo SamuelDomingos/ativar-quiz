@@ -1,20 +1,11 @@
-import { Quiz } from "../generated/prisma/client";
+import { Question, QuestionOption, Quiz } from "../generated/prisma/client";
+import { QuizCreateInput } from "../generated/prisma/models";
 
-interface QuizCreateInput {
-  title: string;
-  description?: string;
-  questions: Array<{
-    title: string;
-    type: "TRUE_FALSE" | "SINGLE_CHOICE";
-    order: number;
-    duration: number;
-    options: Array<{
-      label: string;
-      isCorrect: boolean;
-      order: number;
-    }>;
-  }>;
-}
+export type QuizWithQuestions = Quiz & {
+  questions: (Question & {
+    options: QuestionOption[];
+  })[];
+};
 
 export const createQuiz = async (data: QuizCreateInput): Promise<Quiz> => {
   const response = await fetch("/api/quiz", {
@@ -40,7 +31,7 @@ export const getAllQuizzes = async (): Promise<Quiz[]> => {
   return response.json();
 };
 
-export const getQuizById = async (id: string): Promise<Quiz> => {
+export const getQuizById = async (id: string): Promise<QuizWithQuestions> => {
   const response = await fetch(`/api/quiz/${id}`, {
     method: "GET",
   });
@@ -49,7 +40,7 @@ export const getQuizById = async (id: string): Promise<Quiz> => {
 
 export const getQuizStatus = async (
   id: string,
-): Promise<{ data: string }> => {
+): Promise<{ data: { status: string; totalParticipants: number } }> => {
   const response = await fetch(`/api/quiz/${id}/status`, {
     method: "GET",
   });

@@ -7,6 +7,7 @@ export async function GET(
 ): Promise<NextResponse> {
   try {
     const { id: quizId, questionId } = await params;
+
     const monitoringData = await getQuestionMonitoringData(quizId, questionId);
 
     return NextResponse.json(

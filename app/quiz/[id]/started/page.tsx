@@ -1,158 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { AlertCircle, CheckCircle2, Clock, Timer } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
-interface Question {
-  id: string;
-  type: "true-false" | "multiple-choice";
-  text: string;
-  options?: string[];
-  timeLimit?: number; // em segundos
-}
+import { useParams } from "next/navigation";
+import { useQuizId } from "@/hooks/useQuiz";
 
 const StartedPage = () => {
-  const [questions, setQuestions] = useState<Question[]>([
-    {
-      id: "1",
-      type: "true-false",
-      text: "A capital do Brasil é Brasília?",
-      timeLimit: 20,
-    },
-    {
-      id: "2",
-      type: "multiple-choice",
-      text: "Qual é o maior planeta do sistema solar?",
-      options: ["Saturno", "Júpiter", "Netuno", "Terra"],
-      timeLimit: 25,
-    },
-    {
-      id: "3",
-      type: "true-false",
-      text: "A água ferve a 100°C ao nível do mar?",
-      timeLimit: 20,
-    },
-    {
-      id: "4",
-      type: "multiple-choice",
-      text: "Qual país tem a maior população?",
-      options: ["Índia", "China", "EUA", "Indonésia"],
-      timeLimit: 30,
-    },
-  ]);
+  const params = useParams();
+  const id = params.id as string;
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState<Record<string, any>>({});
-  const [answered, setAnswered] = useState(false);
-  const [showAnswer, setShowAnswer] = useState(false);
-  const [canContinue, setCanContinue] = useState(false);
-  const [timeLeft, setTimeLeft] = useState<number>(0);
-  const [timeExpired, setTimeExpired] = useState(false);
-  const [questionStarted, setQuestionStarted] = useState(false);
-
-  const currentQuestion = questions[currentIndex];
-  const progress = ((currentIndex + 1) / questions.length) * 100;
-  const timeLimit = currentQuestion?.timeLimit || 30;
-  const timePercentage = (timeLeft / timeLimit) * 100;
-
-  // Inicia countdown quando admin libera para responder
-  useEffect(() => {
-    if (!questionStarted) return;
-
-    if (timeLeft <= 0 && questionStarted && !answered) {
-      setTimeExpired(true);
-      setAnswered(true);
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft, questionStarted, answered]);
-
-  // Simula admin liberando para começar a responder
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setQuestionStarted(true);
-      setTimeLeft(timeLimit);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [currentIndex, timeLimit]);
-
-  const handleAnswer = (answer: boolean | number) => {
-    if (!questionStarted || answered || timeExpired) return;
-
-    setUserAnswers((prev) => ({
-      ...prev,
-      [currentQuestion.id]: answer,
-    }));
-    setAnswered(true);
-  };
-
-  // Auto-avança quando admin libera continuar
-  useEffect(() => {
-    if (canContinue) {
-      const timer = setTimeout(() => {
-        if (currentIndex < questions.length - 1) {
-          setCurrentIndex(currentIndex + 1);
-          setUserAnswers((prev) => ({ ...prev }));
-          setAnswered(false);
-          setShowAnswer(false);
-          setCanContinue(false);
-          setTimeExpired(false);
-          setQuestionStarted(false);
-          setTimeLeft(0);
-        } else {
-          // Quiz finalizado
-          console.log("Quiz concluído!");
-        }
-      }, 2000); // Aguarda 2s antes de avançar
-
-      return () => clearTimeout(timer);
-    }
-  }, [canContinue, currentIndex, questions.length]);
-
-  // Simula admin liberando resposta após 3 segundos
-  useEffect(() => {
-    if (answered && !showAnswer) {
-      const timer = setTimeout(() => {
-        setShowAnswer(true);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [answered, showAnswer]);
-
-  // Simula admin liberando continuar após 2 segundos
-  useEffect(() => {
-    if (showAnswer && !canContinue) {
-      const timer = setTimeout(() => {
-        setCanContinue(true);
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [showAnswer, canContinue]);
-
-  if (!currentQuestion) return <div>Carregando perguntas...</div>;
-
-  const getAnswerDisplay = () => {
-    if (currentQuestion.type === "true-false") {
-      return userAnswers[currentQuestion.id] ? "Verdadeiro" : "Falso";
-    }
-    return currentQuestion.options?.[userAnswers[currentQuestion.id]];
-  };
+  const {data} = useQuizId(id);
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-6 flex items-center justify-center">

@@ -170,9 +170,22 @@ export const quizService = {
         };
       }
 
+      if (quiz?.status === "STARTED" || quiz?.status === "WAITING") {
+        const participants = await prisma.quizSession.count({
+          where: {
+            quizId: id,
+          },
+        });
+
+        return {
+          success: true,
+          data: { status: quiz.status, totalParticipants: participants },
+        };
+      }
+
       return {
         success: true,
-        data: quiz.status,
+        data: { status: quiz.status },
       };
     } catch (error) {
       console.error("Erro ao buscar quiz:", error);
@@ -183,7 +196,7 @@ export const quizService = {
     }
   },
 
-    async getById(id: string): Promise<ServiceResponse<any>> {
+  async getById(id: string): Promise<ServiceResponse<any>> {
     try {
       if (!id) {
         return {

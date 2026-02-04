@@ -1,6 +1,6 @@
 "use client";
 
-import { Play, Pause, DoorOpen, ArrowRight } from "lucide-react";
+import { Play, Pause, DoorOpen, ArrowRight, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,7 +17,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useGetQuizStatus } from "../../_hooks/useAdmin";
-import { useControl } from "./_hooks/useQuizControl";
+import { useControl } from "./_hooks/useControl";
 import { getStatusBadge } from "./_lib/status";
 import QrCode from "@/components/qrCode";
 import Link from "next/link";
@@ -27,14 +27,14 @@ export default function EditQuizPage() {
   const id = params.id as string;
 
   const { data, getStatus } = useGetQuizStatus(id);
-  const currentStatus = data?.data;
-  
+  const currentStatus = data?.data.status;
+
   const { uploadControl, isLoading: isLoadingControl } = useControl();
 
   const handleControlQuiz = async (status: string) => {
     try {
       await uploadControl({ idQuiz: id, status });
-      setTimeout(() => getStatus(id), 500);
+      setTimeout(() => getStatus(), 500);
     } catch (error) {
       console.error("Erro ao controlar quiz:", error);
     }
@@ -97,22 +97,23 @@ export default function EditQuizPage() {
                         : "grid-cols-1"
                   }`}
                 >
-                  {currentStatus !== "WAITING" && currentStatus !== "STARTED" && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="lg"
-                          title="Abrir Quiz"
-                          onClick={() => handleControlQuiz("open")}
-                          disabled={isLoadingControl}
-                          className="w-full"
-                        >
-                          <DoorOpen className="w-4 h-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Abrir Quiz</TooltipContent>
-                    </Tooltip>
-                  )}
+                  {
+                    (currentStatus === "PAUSED") && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="lg"
+                            title="Abrir Quiz"
+                            onClick={() => handleControlQuiz("open")}
+                            disabled={isLoadingControl}
+                            className="w-full"
+                          >
+                            <DoorOpen className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Abrir Quiz</TooltipContent>
+                      </Tooltip>
+                    )}
 
                   {currentStatus === "WAITING" && (
                     <Tooltip>
@@ -149,7 +150,7 @@ export default function EditQuizPage() {
                     </Tooltip>
                   )}
 
-                  {currentStatus === "STARTED" && (
+                  {(currentStatus === "STARTED" || currentStatus === "WAITING") && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -169,6 +170,30 @@ export default function EditQuizPage() {
                 </div>
               </CardContent>
             </Card>
+            {(currentStatus === "WAITING" || currentStatus === "STARTED") &&
+              data?.data.totalParticipants !== undefined && (
+                <Card className="border-border shadow-lg">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Participantes</CardTitle>
+                    <CardDescription>Total de pessoas no quiz</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-full">
+                          <Users className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Total</p>
+                          <p className="text-2xl font-bold">
+                            {data?.data.totalParticipants}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
           </div>
         </div>
       </div>

@@ -4,30 +4,18 @@ import { motion } from "framer-motion";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { useParams } from "next/navigation";
 import { useVerifyQuiz } from "@/app/quiz/[id]/_hooks/useVerification";
 import QrCode from "@/components/qrCode";
 
-interface WaitingScreenProps {
-  quizTitle: string;
-  quizDescription: string;
-  participantsCount: number;
-}
-
-export default function WaitingScreenPage({
-  quizTitle,
-  quizDescription,
-  participantsCount,
-}: WaitingScreenProps) {
+export default function WaitingScreenPage() {
   const params = useParams();
   const id = params.id as string;
 
-  const { isLoading, isFetching } = useVerifyQuiz(id);
+  const { data, isLoading } = useVerifyQuiz(id);
 
   if (isLoading) {
     return (
@@ -64,14 +52,6 @@ export default function WaitingScreenPage({
                 <div className="flex justify-center">
                   <Spinner className="w-16 h-16" />
                 </div>
-                <div className="space-y-2">
-                  <CardTitle className="text-2xl font-bold">
-                    {quizTitle}
-                  </CardTitle>
-                  <CardDescription className="text-base">
-                    {quizDescription}
-                  </CardDescription>
-                </div>
               </CardHeader>
 
               <CardContent className="space-y-6">
@@ -100,10 +80,10 @@ export default function WaitingScreenPage({
                       className="text-center"
                     >
                       <p className="text-4xl font-bold text-foreground">
-                        {participantsCount}
+                        {data?.totalParticipants || 0}
                       </p>
                       <p className="text-sm text-muted-foreground mt-2">
-                        pessoa{participantsCount !== 1 ? "s" : ""} aguardando
+                        pessoa{data?.totalParticipants !== 1 ? "s" : ""} aguardando
                       </p>
                     </motion.div>
                   </div>
