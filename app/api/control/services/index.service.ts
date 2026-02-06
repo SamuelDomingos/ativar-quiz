@@ -101,6 +101,12 @@ async function handlePausar(idQuiz: string): Promise<QuizServiceResponse> {
     include: { sessions: true },
   });
 
+  await prisma.quizSession.deleteMany({
+    where: {
+      quizId: idQuiz,
+    },
+  });
+
   return {
     success: true,
     message: "Quiz pausado com sucesso",

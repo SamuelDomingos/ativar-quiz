@@ -1,32 +1,60 @@
-import { useMemo } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { markAnswer } from "@/lib/api/userControl";
 import { useFetch } from "@/hooks/useFetch";
 
-export function useUserControl(
-  sessionId: string,
-  questionId: string,
-  optionId: string,
-) {
-  const fetchOptions = useMemo(
-    () => ({
-      auto: false,
-      defaultArgs:
-        sessionId && questionId && optionId
-          ? [sessionId, questionId, optionId]
-          : [],
-    }),
-    [sessionId, questionId, optionId],
+export function useUserControl({
+  sessionId,
+  currentQuestionId,
+}: {
+  sessionId: string;
+  currentQuestionId: string;
+}) {
+  const [selectedAnswerId, setSelectedAnswerId] = useState<string | null>(null);
+  const [hasAnswered, setHasAnswered] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { execute: submitAnswer, isLoading: isLoadingSubmit } = useFetch(
+    markAnswer,
+    { auto: false },
   );
 
-  const { execute, data, isLoading, error } = useFetch(
-    markAnswer,
-    fetchOptions,
-  );
+  const handleSubmitAnswer = useCallback(async () => {
+    if (!selectedAnswerId || !currentQuestionId || hasAnswered) return;
+
+    try {
+      setIsSubmitting(true);
+
+      await submitAnswer(sessionId, currentQuestionId, selectedAnswerId);
+
+      setHasAnswered(true);
+    } catch (error) {
+      console.error("Erro ao enviar resposta:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [sessionId, currentQuestionId, selectedAnswerId, submitAnswer, hasAnswered]);
+
+  const resetAnswer = useCallback(() => {
+    setSelectedAnswerId(null);
+    setHasAnswered(false);
+  }, []);
+
+  useEffect(() => {
+    if (currentQuestionId) {
+      resetAnswer();
+    }
+  }, [currentQuestionId, resetAnswer]);
 
   return {
-    execute,
-    data,
-    isLoading,
-    error,
+    selectedAnswerId,
+    hasAnswered,
+
+    setSelectedAnswerId,
+
+    handleSubmitAnswer,
+    resetAnswer,
+
+    isSubmitting,
+    isLoading: isLoadingSubmit,
   };
 }

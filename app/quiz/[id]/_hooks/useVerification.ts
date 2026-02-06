@@ -60,6 +60,10 @@ export const useVerifyQuiz = (id: string) => {
       if (status === "PAUSED" || status === "FINISHED" || !data.success) {
         router.push("/");
       }
+
+      if (status === "STARTED") {
+        router.push(`/quiz/${id}/started`);
+      }
     }
   }, [data?.data?.status, data?.success, isLoading, router]);
 

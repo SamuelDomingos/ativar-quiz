@@ -1,177 +1,249 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { AlertCircle, CheckCircle2, Clock, Timer } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useParams } from "next/navigation";
+import { CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useQuizId } from "@/hooks/useQuiz";
+import { useUserControl } from "./_hooks/useUserControl";
+import { Spinner } from "@/components/ui/spinner";
 
-const StartedPage = () => {
+const ParticipantQuizPage = () => {
   const params = useParams();
-  const id = params.id as string;
+  const quizId = params.id as string;
 
-  const {data} = useQuizId(id);
+  const { data: quiz, isLoading: quizLoading } = useQuizId(quizId);
+  console.log(quiz);
+  
+
+  const {
+    selectedAnswerId,
+    hasAnswered,
+    setSelectedAnswerId,
+    handleSubmitAnswer,
+    isSubmitting,
+  } = useUserControl({
+    sessionId: quizId,
+    currentQuestionId: quiz?.currentQuestionId || "",
+  });
+
+  const currentQuestion = quiz?.questions?.find(
+    (q) => q.id === quiz.currentQuestionId,
+  );
+
+  const calculateTimeLeft = () => {
+    if (!quiz?.questionStartedAt || !currentQuestion?.duration) return 0;
+
+    const startTime = new Date(quiz.questionStartedAt).getTime();
+    const now = new Date().getTime();
+    const elapsed = Math.floor((now - startTime) / 1000);
+    const remaining = currentQuestion.duration - elapsed;
+
+    return Math.max(0, remaining);
+  };
+
+  const timeLeft = calculateTimeLeft();
+  const timePercentage = currentQuestion?.duration
+    ? (timeLeft / currentQuestion.duration) * 100
+    : 0;
+
+  const currentQuestionIndex =
+    quiz?.questions?.findIndex((q) => q.id === quiz.currentQuestionId) ?? -1;
+
+  const totalQuestions = quiz?.questions?.length || 0;
+
+  if (quizLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Spinner />
+          <p className="text-muted-foreground">Carregando quiz...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (quiz?.status === "FINISHED") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-background flex items-center justify-center">
+        <Card className="w-96">
+          <CardHeader>
+            <CardTitle>{quiz.title}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Alert className="bg-green-50 border-green-200">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-700">
+                Quiz finalizado! Obrigado por participar.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!currentQuestion) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-background flex items-center justify-center">
+        <Card className="w-96">
+          <CardHeader>
+            <CardTitle>{quiz?.title}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Alert>
+              <Clock className="h-4 w-4" />
+              <AlertDescription>
+                Aguardando a próxima pergunta...
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-6 flex items-center justify-center">
-      <Card className="w-full max-w-2xl p-8">
-        {/* Header com Progresso e Timer */}
-        <div className="mb-8 flex justify-between items-start gap-4">
-          {/* Progresso */}
-          <div className="flex-1">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-sm font-medium text-gray-700">
-                Pergunta {currentIndex + 1} de {questions.length}
-              </h3>
-              <span className="text-xs font-semibold text-gray-500">
-                {Math.round(progress)}%
-              </span>
-            </div>
-            <Progress value={progress} className="h-2" />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-background p-4 md:p-6">
+      <div className="max-w-2xl mx-auto mb-8">
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">
+              {quiz?.title}
+            </h1>
+            {quiz?.description && (
+              <p className="text-muted-foreground mt-1">{quiz.description}</p>
+            )}
           </div>
-
-          {/* Timer no canto */}
-          <div className="text-right">
-            <div className="flex items-center gap-1 mb-2">
-              <Timer className="w-4 h-4 text-slate-600" />
-              <span
-                className={`text-sm font-bold ${
-                  timeExpired
-                    ? "text-red-600"
-                    : timeLeft <= 5
-                      ? "text-orange-600"
-                      : "text-green-600"
-                }`}
-              >
-                {timeLeft}s
-              </span>
-            </div>
-            <div className="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all ${
-                  timeExpired
-                    ? "bg-red-500"
-                    : timeLeft <= 5
-                      ? "bg-orange-500"
-                      : "bg-green-500"
-                }`}
-                style={{ width: `${timePercentage}%` }}
-              ></div>
-            </div>
-          </div>
+          <Badge variant="outline" className="text-base px-4 py-2">
+            {currentQuestionIndex + 1}/{totalQuestions}
+          </Badge>
         </div>
 
-        {/* Pergunta */}
-        <h2 className="text-2xl font-bold text-gray-900 mb-8">
-          {currentQuestion.text}
-        </h2>
+        <Progress
+          value={((currentQuestionIndex + 1) / totalQuestions) * 100}
+          className="h-2"
+        />
+      </div>
 
-        {!questionStarted && (
-          <Alert className="mb-6 bg-blue-50 border-blue-200">
-            <Clock className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-800">
-              Aguardando admin liberar para responder...
+      <div className="max-w-2xl mx-auto">
+        <Card className="border-border shadow-lg mb-6">
+          <CardHeader className="pb-6 border-b border-border">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <CardTitle className="text-2xl mb-2">
+                  {currentQuestion.title}
+                </CardTitle>
+                <CardDescription>Selecione uma opção abaixo</CardDescription>
+              </div>
+
+              {/* Timer */}
+              <div className="text-center shrink-0">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Clock
+                    className={`w-4 h-4 ${timeLeft <= 10 ? "text-red-500" : "text-primary"}`}
+                  />
+                </div>
+                <p
+                  className={`text-3xl font-bold ${timeLeft <= 10 ? "text-red-500" : "text-primary"}`}
+                >
+                  {timeLeft}s
+                </p>
+                <Progress value={timePercentage} className="h-1 mt-2 w-24" />
+              </div>
+            </div>
+          </CardHeader>
+
+          {/* Opções */}
+          <CardContent className="pt-6 space-y-3">
+            {currentQuestion.options
+              ?.sort((a, b) => a.order - b.order)
+              .map((option, index) => (
+                <button
+                  key={option.id}
+                  onClick={() => {
+                    if (!hasAnswered && timeLeft > 0) {
+                      setSelectedAnswerId(option.id);
+                    }
+                  }}
+                  disabled={hasAnswered || isSubmitting || timeLeft === 0}
+                  className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                    selectedAnswerId === option.id
+                      ? "border-primary bg-primary/10 shadow-md"
+                      : "border-border hover:border-primary/50 hover:shadow-sm"
+                  } ${hasAnswered || timeLeft === 0 ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div
+                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold flex-shrink-0 ${
+                        selectedAnswerId === option.id
+                          ? "border-primary bg-primary text-white"
+                          : "border-muted-foreground text-muted-foreground"
+                      }`}
+                    >
+                      {String.fromCharCode(65 + index)}
+                    </div>
+                    <span className="font-medium text-base flex-1">
+                      {option.label}
+                    </span>
+                  </div>
+                </button>
+              ))}
+          </CardContent>
+        </Card>
+
+        {/* Alerta se tempo acabou */}
+        {timeLeft === 0 && !hasAnswered && (
+          <Alert className="mb-6 bg-red-50 border-red-200">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-700">
+              Tempo esgotado! Aguardando próxima pergunta...
             </AlertDescription>
           </Alert>
         )}
 
-        {currentQuestion.type === "true-false" && (
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            <Button
-              disabled={!questionStarted || answered || timeExpired}
-              onClick={() => handleAnswer(true)}
-              variant={
-                userAnswers[currentQuestion.id] === true ? "default" : "outline"
-              }
-              className="h-24 text-lg font-semibold"
-            >
-              <CheckCircle2 className="w-5 h-5 mr-2" />
-              Verdadeiro
-            </Button>
-            <Button
-              disabled={!questionStarted || answered || timeExpired}
-              onClick={() => handleAnswer(false)}
-              variant={
-                userAnswers[currentQuestion.id] === false
-                  ? "default"
-                  : "outline"
-              }
-              className="h-24 text-lg font-semibold"
-            >
-              <AlertCircle className="w-5 h-5 mr-2" />
-              Falso
-            </Button>
-          </div>
+        {/* Alerta se não respondeu */}
+        {!hasAnswered && !selectedAnswerId && timeLeft > 0 && (
+          <Alert className="mb-6 bg-amber-50 border-amber-200">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-700">
+              Selecione uma opção para responder a pergunta
+            </AlertDescription>
+          </Alert>
         )}
 
-        {currentQuestion.type === "multiple-choice" && (
-          <div className="grid gap-3 mb-8">
-            {currentQuestion.options?.map((option, index) => (
-              <Button
-                key={index}
-                disabled={!questionStarted || answered || timeExpired}
-                onClick={() => handleAnswer(index)}
-                variant={
-                  userAnswers[currentQuestion.id] === index
-                    ? "default"
-                    : "outline"
-                }
-                className="h-14 text-base font-semibold justify-start"
-              >
-                <span className="w-6 h-6 rounded-full border-2 border-current flex items-center justify-center mr-3 text-sm">
-                  {String.fromCharCode(65 + index)}
-                </span>
-                {option}
-              </Button>
-            ))}
-          </div>
-        )}
-
-        {timeExpired && !answered && (
-          <Alert
-            variant="destructive"
-            className="mb-6 bg-red-50 border-red-200"
+        {/* Botão Responder */}
+        {!hasAnswered && timeLeft > 0 ? (
+          <Button
+            onClick={handleSubmitAnswer}
+            disabled={!selectedAnswerId || isSubmitting}
+            size="lg"
+            className="w-full"
           >
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Tempo expirado! Aguardando admin liberar resposta...
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {answered && !showAnswer && (
-          <Alert className="mb-6 bg-yellow-50 border-yellow-200">
-            <Clock className="h-4 w-4 text-yellow-600" />
-            <AlertDescription className="text-yellow-800">
-              Aguardando admin liberar resposta...
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {showAnswer && (
-          <Alert className="mb-6 bg-green-50 border-green-200">
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800">
-              <p className="font-semibold mb-2">
-                Sua resposta:{" "}
-                <span className="text-green-700">
-                  {timeExpired ? "Tempo expirado" : getAnswerDisplay()}
-                </span>
-              </p>
-              {!canContinue && (
-                <p className="text-sm">Aguardando para próxima pergunta...</p>
-              )}
-              {canContinue && (
-                <p className="text-sm">➜ Avançando para próxima pergunta...</p>
-              )}
-            </AlertDescription>
-          </Alert>
-        )}
-      </Card>
+            {isSubmitting ? "Enviando..." : "Responder"}
+          </Button>
+        ) : hasAnswered ? (
+          <div className="flex flex-col gap-3">
+            <Alert className="bg-green-50 border-green-200">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-700">
+                Resposta registrada com sucesso! Aguardando próxima pergunta...
+              </AlertDescription>
+            </Alert>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 };
 
-export default StartedPage;
+export default ParticipantQuizPage;

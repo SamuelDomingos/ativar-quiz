@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { QuestionType, QuizStatus } from "@/lib/generated/prisma/enums";
 
 interface CreateQuizInput {
   title: string;
@@ -221,6 +220,16 @@ export const quizService = {
           success: false,
           error: "Quiz não encontrado",
         };
+      }
+
+      if (quiz.currentQuestionId === null || quiz.currentQuestionId === "") {
+        const quizQuestionCurrent = quiz.questions.find((q) => q.order === 0);
+        if (quizQuestionCurrent) {
+          await prisma.quiz.update({
+            where: { id },
+            data: { currentQuestionId: quizQuestionCurrent.id },
+          });
+        }
       }
 
       return {

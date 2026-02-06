@@ -4,24 +4,25 @@ import { quizControlService } from "../../services/quizControl.service";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const idQuiz = params.id;
+    const { id: idQuiz } = await params;
+
     const body = await request.json();
     const { action } = body;
 
     if (!idQuiz) {
       return NextResponse.json(
         { error: "ID do quiz é obrigatório" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!action) {
       return NextResponse.json(
         { error: "Ação é obrigatória" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -49,7 +50,7 @@ export async function POST(
     console.error("Erro ao controlar quiz:", erro);
     return NextResponse.json(
       { error: "Erro ao processar dados" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -109,9 +109,6 @@ export const getQuestionMonitoringData = async (
   }
 };
 
-/**
- * Busca todas as respostas de uma pergunta com detalhes do participante
- */
 export const getQuestionAnswersDetail = async (questionId: string) => {
   try {
     const answers = await prisma.userAnswer.findMany({

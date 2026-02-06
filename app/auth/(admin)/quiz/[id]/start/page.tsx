@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { useQuizMonitoring } from "./_hooks/useQuizMonitoring";
 import { useQuizControl } from "./_hooks/useQuizControl";
 import { useQuizId } from "@/hooks/useQuiz";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function QuizStartPage() {
   const params = useParams();
@@ -29,12 +30,12 @@ export default function QuizStartPage() {
   );
 
   const { monitoringData } = useQuizMonitoring(id, currentQuestion?.id || "");
-
+  
   if (quizLoading) {
     return (
       <div className="min-h-screen from-background via-background to-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <Spinner />
           <p className="text-muted-foreground">Carregando quiz...</p>
         </div>
       </div>
@@ -91,9 +92,6 @@ export default function QuizStartPage() {
                   {currentQuestion ? `${currentQuestion.duration}s` : "-"}
                 </p>
               </div>
-              <Badge variant="outline" className="text-base px-4 py-1">
-                {progressPercentage.toFixed(0)}% respondido
-              </Badge>
               <div className="text-right">
                 <p className="text-sm font-medium text-foreground">
                   Participantes Online
@@ -191,7 +189,7 @@ export default function QuizStartPage() {
 
             <div className="flex flex-col gap-3">
               <div className="flex gap-3">
-                {!quiz.currentQuestionId && (
+                {quiz.currentQuestionId === quiz.questions[0]?.id && (
                   <Button
                     onClick={quizControl.handleStartQuiz}
                     disabled={quizControl.isLoading}
