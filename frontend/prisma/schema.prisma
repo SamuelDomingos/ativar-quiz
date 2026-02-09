@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Administrator {
+  id       String @id @default(uuid())
+  name     String
+  email    String @unique
+  password String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Quiz {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  status      QuizStatus @default(WAITING)
+
+  currentQuestionId String?
+  questionStartedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  questions Question[]
+  sessions  QuizSession[]
+}
+
+enum QuizStatus {
+  WAITING
+  STARTED
+  PAUSED
+  FINISHED
+}
+
+model Question {
+  id     String @id @default(uuid())
+  quizId String
+  quiz   Quiz   @relation(fields: [quizId], references: [id])
+
+  title    String
+  type     QuestionType
+  order    Int
+  duration Int
+
+  options QuestionOption[]
+  answers UserAnswer[]
+
+  createdAt DateTime @default(now())
+}
+
+enum QuestionType {
+  TRUE_FALSE
+  SINGLE_CHOICE
+}
+
+model QuestionOption {
+  id         String   @id @default(uuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id])
+
+  label     String
+  isCorrect Boolean
+
+  order Int
+
+  answers UserAnswer[]
+}
+
+model QuizSession {
+  id     String @id @default(uuid())
+  quizId String
+  quiz   Quiz   @relation(fields: [quizId], references: [id])
+
+  userName String
+  joinedAt DateTime @default(now())
+
+  answers UserAnswer[]
+}
+
+model UserAnswer {
+  id         String @id @default(uuid())
+  sessionId  String
+  questionId String
+  optionId   String
+
+  session  QuizSession    @relation(fields: [sessionId], references: [id])
+  question Question       @relation(fields: [questionId], references: [id])
+  option   QuestionOption @relation(fields: [optionId], references: [id])
+
+  answeredAt DateTime @default(now())
+
+  @@unique([sessionId, questionId])
+}
