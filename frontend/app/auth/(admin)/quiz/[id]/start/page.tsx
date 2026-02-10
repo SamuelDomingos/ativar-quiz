@@ -9,10 +9,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { useQuizMonitoring } from "./_hooks/useQuizMonitoring";
+import { useQuizMonitoring } from "@/hooks/useQuizMonitoring";
 import { useQuizControl } from "./_hooks/useQuizControl";
 import { useQuizId } from "@/hooks/useQuiz";
 import { Spinner } from "@/components/ui/spinner";
@@ -23,14 +22,14 @@ export default function QuizStartPage() {
 
   const { data: quiz, isLoading: quizLoading } = useQuizId(id);
 
-  const quizControl = useQuizControl(quiz || undefined);
+  const quizControl = useQuizControl(id);
 
   const currentQuestion = quiz?.questions?.find(
     (q) => q.id === quiz.currentQuestionId,
   );
 
-  const { monitoringData } = useQuizMonitoring(id, currentQuestion?.id || "");
-  
+  const { monitoringData } = useQuizMonitoring(id);
+
   if (quizLoading) {
     return (
       <div className="min-h-screen from-background via-background to-background flex items-center justify-center">
@@ -60,9 +59,9 @@ export default function QuizStartPage() {
     (q) => q.id === quiz.currentQuestionId,
   );
 
-  const totalParticipants = monitoringData?.totalParticipants || 0;
-  const answeredCount = monitoringData?.answeredCount || 0;
-  const answerStatistics = monitoringData?.answerStatistics || [];
+  const totalParticipants = monitoringData?.data?.totalParticipants || 0;
+  const answeredCount = monitoringData?.data?.answeredCount || 0;
+  const answerStatistics = monitoringData?.data?.answerStatistics || [];
 
   const progressPercentage =
     totalParticipants > 0 ? (answeredCount / totalParticipants) * 100 : 0;
@@ -205,11 +204,11 @@ export default function QuizStartPage() {
                 {quiz.currentQuestionId && (
                   <Button
                     onClick={quizControl.handleNextQuestion}
-                    disabled={!quizControl.canGoNext || quizControl.isLoading}
+                    disabled={!quizControl || quizControl.isLoading}
                     size="lg"
                     className="flex-1"
                   >
-                    {!quizControl.canGoNext ? "Quiz Finalizado" : "Próxima"}
+                    {!quizControl ? "Quiz Finalizado" : "Próxima"}
                     <ChevronRight className="w-4 h-4 ml-2" />
                   </Button>
                 )}

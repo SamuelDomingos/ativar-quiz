@@ -1,12 +1,8 @@
 import { useFetch } from "@/hooks/useFetch";
-import {
-  getAllQuizzes,
-  createQuiz,
-  getQuizById,
-  getQuizStatus,
-} from "@/lib/api/quiz";
-import { useQuery } from "@tanstack/react-query";
+import { getAllQuizzes, createQuiz } from "@/lib/api/quiz";
 import { useMemo } from "react";
+import { useEffect, useState } from "react";
+import { getSocket } from "@/lib/socket";
 
 export const useCreateQuiz = () => {
   const {
@@ -51,20 +47,46 @@ export const useGetAllQuizzes = () => {
   };
 };
 
-export const useGetQuizStatus = (id: string) => {
-  const { data, isLoading, error, isFetching, refetch } = useQuery({
-    queryKey: ["quiz", "status", id],
-    queryFn: () => getQuizStatus(id),
-    refetchInterval: (query) => {
-      const status = query.state.data?.data?.status;
-      return status === "STARTED" || status === "WAITING" ? 10000 : false;
-    },
-    refetchIntervalInBackground: true,
-    enabled: !!id,
-    staleTime: 0,
-    gcTime: 1000 * 60 * 5,
-    retry: 1,
-  });
+export const useGetQuizStatus = (quizId: string) => {
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isFetching, setIsFetching] = useState(false);
+
+  useEffect(() => {
+    if (!quizId) return;
+
+    const socket = getSocket();
+
+    socket.emit("quiz:join", quizId);
+
+    socket.emit("monitoring:get-quiz-data", { quizId });
+
+    socket.on("monitoring:quiz-data", (monitoringData) => {
+      setData(monitoringData?.data);
+      setIsLoading(false);
+      setIsFetching(false);
+      setError(null);
+    });
+
+    socket.on("monitoring:error", (err) => {
+      setError(err.message);
+      setIsLoading(false);
+      setIsFetching(false);
+    });
+
+    return () => {
+      socket.off("monitoring:quiz-data");
+      socket.off("monitoring:error");
+    };
+  }, [quizId]);
+
+  const refetch = () => {
+    if (!quizId) return;
+    setIsFetching(true);
+    const socket = getSocket();
+    socket.emit("monitoring:get-quiz-data", { quizId });
+  };
 
   return {
     getStatus: refetch,

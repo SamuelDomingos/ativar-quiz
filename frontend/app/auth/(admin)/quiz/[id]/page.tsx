@@ -27,13 +27,14 @@ export default function EditQuizPage() {
   const id = params.id as string;
 
   const { data, getStatus } = useGetQuizStatus(id);
-  const currentStatus = data?.data.status;
 
-  const { uploadControl, isLoading: isLoadingControl } = useControl();
+  const currentStatus = data?.quizStatus;
 
-  const handleControlQuiz = async (status: string) => {
+  const { uploadControl, isLoading: isLoadingControl } = useControl(id);
+
+  const handleControlQuiz = async (command: "open" | "start" | "pause") => {
     try {
-      await uploadControl({ idQuiz: id, status });
+      await uploadControl(command);
       setTimeout(() => getStatus(), 500);
     } catch (error) {
       console.error("Erro ao controlar quiz:", error);
@@ -97,23 +98,22 @@ export default function EditQuizPage() {
                         : "grid-cols-1"
                   }`}
                 >
-                  {
-                    (currentStatus === "PAUSED") && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="lg"
-                            title="Abrir Quiz"
-                            onClick={() => handleControlQuiz("open")}
-                            disabled={isLoadingControl}
-                            className="w-full"
-                          >
-                            <DoorOpen className="w-4 h-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Abrir Quiz</TooltipContent>
-                      </Tooltip>
-                    )}
+                  {currentStatus === "PAUSED" && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="lg"
+                          title="Abrir Quiz"
+                          onClick={() => handleControlQuiz("open")}
+                          disabled={isLoadingControl}
+                          className="w-full"
+                        >
+                          <DoorOpen className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Abrir Quiz</TooltipContent>
+                    </Tooltip>
+                  )}
 
                   {currentStatus === "WAITING" && (
                     <Tooltip>
@@ -150,7 +150,8 @@ export default function EditQuizPage() {
                     </Tooltip>
                   )}
 
-                  {(currentStatus === "STARTED" || currentStatus === "WAITING") && (
+                  {(currentStatus === "STARTED" ||
+                    currentStatus === "WAITING") && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -171,7 +172,7 @@ export default function EditQuizPage() {
               </CardContent>
             </Card>
             {(currentStatus === "WAITING" || currentStatus === "STARTED") &&
-              data?.data.totalParticipants !== undefined && (
+              data?.totalParticipants !== undefined && (
                 <Card className="border-border shadow-lg">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg">Participantes</CardTitle>
@@ -186,7 +187,7 @@ export default function EditQuizPage() {
                         <div>
                           <p className="text-sm text-muted-foreground">Total</p>
                           <p className="text-2xl font-bold">
-                            {data?.data.totalParticipants}
+                            {data?.totalParticipants}
                           </p>
                         </div>
                       </div>

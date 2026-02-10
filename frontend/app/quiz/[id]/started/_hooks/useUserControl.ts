@@ -1,9 +1,9 @@
+// hooks/useUserControl.ts
 import { useState, useCallback, useEffect } from "react";
-import { markAnswer } from "@/lib/api/userControl";
-import { useFetch } from "@/hooks/useFetch";
+import { getSocket } from "@/lib/socket";
+import { toast } from "sonner";
 
 export function useUserControl({
-  sessionId,
   currentQuestionId,
 }: {
   sessionId: string;
@@ -13,26 +13,17 @@ export function useUserControl({
   const [hasAnswered, setHasAnswered] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { execute: submitAnswer, isLoading: isLoadingSubmit } = useFetch(
-    markAnswer,
-    { auto: false },
-  );
-
   const handleSubmitAnswer = useCallback(async () => {
     if (!selectedAnswerId || !currentQuestionId || hasAnswered) return;
 
-    try {
-      setIsSubmitting(true);
+    setIsSubmitting(true);
+    const socket = getSocket();
 
-      await submitAnswer(sessionId, currentQuestionId, selectedAnswerId);
-
-      setHasAnswered(true);
-    } catch (error) {
-      console.error("Erro ao enviar resposta:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [sessionId, currentQuestionId, selectedAnswerId, submitAnswer, hasAnswered]);
+    socket.emit("answer:submit", {
+      questionId: currentQuestionId,
+      optionId: selectedAnswerId,
+    });
+  }, [selectedAnswerId, currentQuestionId, hasAnswered]);
 
   const resetAnswer = useCallback(() => {
     setSelectedAnswerId(null);
@@ -40,21 +31,35 @@ export function useUserControl({
   }, []);
 
   useEffect(() => {
-    if (currentQuestionId) {
-      resetAnswer();
-    }
-  }, [currentQuestionId, resetAnswer]);
+    const socket = getSocket();
+
+    const handleAnswerConfirmed = () => {
+      setHasAnswered(true);
+      setIsSubmitting(false);
+      toast.success("Resposta registrada!");
+    };
+
+    const handleAnswerError = (error: any) => {
+      setIsSubmitting(false);
+      toast.error(error);
+    };
+
+    socket.on("answer:confirmed", handleAnswerConfirmed);
+    socket.on("answer:error", handleAnswerError);
+
+    return () => {
+      socket.off("answer:confirmed", handleAnswerConfirmed);
+      socket.off("answer:error", handleAnswerError);
+    };
+  }, []);
 
   return {
     selectedAnswerId,
     hasAnswered,
-
     setSelectedAnswerId,
-
     handleSubmitAnswer,
     resetAnswer,
-
     isSubmitting,
-    isLoading: isLoadingSubmit,
+    isLoading: isSubmitting,
   };
 }
