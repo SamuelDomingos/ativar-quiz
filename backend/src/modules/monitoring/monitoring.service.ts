@@ -1,14 +1,13 @@
+import { Question, QuestionOption } from "@/src/lib/generated/prisma/client";
 import { prisma } from "@/src/lib/prisma";
 
 export interface MonitoringData {
   totalParticipants: number;
   quizStatus: string;
-  currentQuestion?: {
-    id: string;
-    title: string;
-    order: number;
-    duration: number;
+  currentQuestion?: Question & {
+    options: QuestionOption[];
   };
+
   answersCount?: number;
   totalOptions?: number;
 }
@@ -60,13 +59,7 @@ export const getQuizMonitoringData = async (
           },
         });
 
-        monitoringData.currentQuestion = {
-          id: currentQuestion.id,
-          title: currentQuestion.title,
-          order: currentQuestion.order,
-          duration: currentQuestion.duration,
-        };
-
+        monitoringData.currentQuestion = currentQuestion;
         monitoringData.answersCount = answersCount;
         monitoringData.totalOptions = currentQuestion.options.length;
       }

@@ -8,10 +8,10 @@
  *
  * 🟢 You can import this file directly.
  */
-export type * from './models/Administrator.ts'
-export type * from './models/Quiz.ts'
-export type * from './models/Question.ts'
-export type * from './models/QuestionOption.ts'
-export type * from './models/QuizSession.ts'
-export type * from './models/UserAnswer.ts'
-export type * from './commonInputTypes.ts'
+export type * from './models/Administrator'
+export type * from './models/Quiz'
+export type * from './models/Question'
+export type * from './models/QuestionOption'
+export type * from './models/QuizSession'
+export type * from './models/UserAnswer'
+export type * from './commonInputTypes'

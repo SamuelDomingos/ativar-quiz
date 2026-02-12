@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client"
-  output   = "../lib/generated/prisma"
+  output   = "../src/lib/generated/prisma"
 }
 
 datasource db {
@@ -24,7 +24,6 @@ model Quiz {
   status      QuizStatus @default(WAITING)
 
   currentQuestionId String?
-  questionStartedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -45,10 +44,12 @@ model Question {
   quizId String
   quiz   Quiz   @relation(fields: [quizId], references: [id])
 
-  title    String
-  type     QuestionType
-  order    Int
-  duration Int
+  title             String
+  type              QuestionType
+  order             Int
+  duration          Int
+  started           Boolean      @default(false)
+  questionStartedAt DateTime?
 
   options QuestionOption[]
   answers UserAnswer[]

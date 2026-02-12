@@ -16,10 +16,10 @@
  */
 
 import * as runtime from "@prisma/client/runtime/client"
-import type * as Prisma from "../models.ts"
-import { type PrismaClient } from "./class.ts"
+import type * as Prisma from "../models"
+import { type PrismaClient } from "./class"
 
-export type * from '../models.ts'
+export type * from '../models'
 
 export type DMMF = typeof runtime.DMMF
 
@@ -910,7 +910,6 @@ export const QuizScalarFieldEnum = {
   description: 'description',
   status: 'status',
   currentQuestionId: 'currentQuestionId',
-  questionStartedAt: 'questionStartedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -925,6 +924,8 @@ export const QuestionScalarFieldEnum = {
   type: 'type',
   order: 'order',
   duration: 'duration',
+  started: 'started',
+  questionStartedAt: 'questionStartedAt',
   createdAt: 'createdAt'
 } as const
 

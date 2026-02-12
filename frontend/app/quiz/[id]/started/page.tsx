@@ -39,9 +39,8 @@ const ParticipantQuizPage = () => {
     currentQuestionId: currentQuestion?.id || "",
   });
 
-
   const timePercentage = currentQuestion?.duration
-    ? (timeLeft / currentQuestion.duration) * 100
+    ? currentQuestion.duration * 100
     : 0;
 
   if (isLoading) {
@@ -111,7 +110,6 @@ const ParticipantQuizPage = () => {
             </Alert>
             <div className="mt-4 text-sm text-muted-foreground">
               <p>Participantes: {totalParticipants}</p>
-              <p>Status: {quizStatus}</p>
             </div>
           </CardContent>
         </Card>
@@ -141,7 +139,9 @@ const ParticipantQuizPage = () => {
           </span>
         </div>
         <Progress
-          value={totalParticipants > 0 ? (answersCount / totalParticipants) * 100 : 0}
+          value={
+            totalParticipants > 0 ? (answersCount / totalParticipants) * 100 : 0
+          }
           className="h-2"
         />
       </div>
@@ -161,20 +161,19 @@ const ParticipantQuizPage = () => {
               <div className="text-center shrink-0">
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <Clock
-                    className={`w-4 h-4 ${timeLeft <= 10 ? "text-red-500" : "text-primary"}`}
+                    className={`w-4 h-4 ${currentQuestion?.duration <= 10 ? "text-red-500" : "text-primary"}`}
                   />
                 </div>
                 <p
-                  className={`text-3xl font-bold ${timeLeft <= 10 ? "text-red-500" : "text-primary"}`}
+                  className={`text-3xl font-bold ${currentQuestion?.duration <= 10 ? "text-red-500" : "text-primary"}`}
                 >
-                  {timeLeft}s
+                  {currentQuestion?.duration}s
                 </p>
                 <Progress value={timePercentage} className="h-1 mt-2 w-24" />
               </div>
             </div>
           </CardHeader>
 
-          {/* Opções */}
           <CardContent className="pt-6 space-y-3">
             {currentQuestion.options && currentQuestion.options.length > 0 ? (
               currentQuestion.options
@@ -183,16 +182,20 @@ const ParticipantQuizPage = () => {
                   <button
                     key={option.id}
                     onClick={() => {
-                      if (!hasAnswered && timeLeft > 0) {
+                      if (!hasAnswered && currentQuestion?.duration > 0) {
                         setSelectedAnswerId(option.id);
                       }
                     }}
-                    disabled={hasAnswered || isSubmitting || timeLeft === 0}
+                    disabled={
+                      hasAnswered ||
+                      isSubmitting ||
+                      currentQuestion?.duration === 0
+                    }
                     className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
                       selectedAnswerId === option.id
                         ? "border-primary bg-primary/10 shadow-md"
                         : "border-border hover:border-primary/50 hover:shadow-sm"
-                    } ${hasAnswered || timeLeft === 0 ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+                    } ${hasAnswered || currentQuestion?.duration === 0 ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
                   >
                     <div className="flex items-center gap-4">
                       <div
@@ -217,7 +220,7 @@ const ParticipantQuizPage = () => {
         </Card>
 
         {/* Alerta se tempo acabou */}
-        {timeLeft === 0 && !hasAnswered && (
+        {currentQuestion?.duration === 0 && !hasAnswered && (
           <Alert className="mb-6 bg-red-50 border-red-200">
             <AlertCircle className="h-4 w-4 text-red-600" />
             <AlertDescription className="text-red-700">
@@ -227,7 +230,7 @@ const ParticipantQuizPage = () => {
         )}
 
         {/* Alerta se não respondeu */}
-        {!hasAnswered && !selectedAnswerId && timeLeft > 0 && (
+        {!hasAnswered && !selectedAnswerId && currentQuestion?.duration > 0 && (
           <Alert className="mb-6 bg-amber-50 border-amber-200">
             <AlertCircle className="h-4 w-4 text-amber-600" />
             <AlertDescription className="text-amber-700">
@@ -237,7 +240,7 @@ const ParticipantQuizPage = () => {
         )}
 
         {/* Botão Responder */}
-        {!hasAnswered && timeLeft > 0 ? (
+        {!hasAnswered && currentQuestion?.duration > 0 ? (
           <Button
             onClick={handleSubmitAnswer}
             disabled={!selectedAnswerId || isSubmitting}

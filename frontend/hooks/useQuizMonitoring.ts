@@ -1,21 +1,18 @@
 import { useEffect, useState } from "react";
 import { getSocket } from "@/lib/socket";
+import { Question, QuestionOption } from "@/lib/generated/prisma/client";
 
 interface MonitoringData {
-  totalParticipants: number;
-  answeredCount: number;
-  participants: Array<{
-    id: string;
-    name: string;
-    answered: boolean;
-  }>;
-  answerStatistics: Array<{
-    optionId: string;
-    optionLabel: string;
-    isCorrect: boolean;
-    count: number;
-    percentage: number;
-  }>;
+  data: {
+    totalParticipants: number;
+    quizStatus: string;
+    currentQuestion?: Question & {
+      options: QuestionOption[];
+    };
+
+    answersCount: number;
+    totalOptions: number;
+  };
 }
 
 export function useQuizMonitoring(quizId: string) {

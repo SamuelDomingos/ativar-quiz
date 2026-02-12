@@ -26,7 +26,7 @@ export async function markAnswer(
     });
 
     const elapsed =
-      (Date.now() - (session.quiz.questionStartedAt?.getTime() ?? 0)) / 1000;
+      (Date.now() - (question?.questionStartedAt?.getTime() ?? 0)) / 1000;
 
     if (elapsed > question!.duration) {
       throw new Error("Tempo esgotado");

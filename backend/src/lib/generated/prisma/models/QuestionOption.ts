@@ -9,8 +9,8 @@
  * 🟢 You can import this file directly.
  */
 import type * as runtime from "@prisma/client/runtime/client"
-import type * as $Enums from "../enums.ts"
-import type * as Prisma from "../internal/prismaNamespace.ts"
+import type * as $Enums from "../enums"
+import type * as Prisma from "../internal/prismaNamespace"
 
 /**
  * Model QuestionOption
@@ -413,10 +413,6 @@ export type QuestionOptionUncheckedUpdateManyWithoutQuestionNestedInput = {
   update?: Prisma.QuestionOptionUpdateWithWhereUniqueWithoutQuestionInput | Prisma.QuestionOptionUpdateWithWhereUniqueWithoutQuestionInput[]
   updateMany?: Prisma.QuestionOptionUpdateManyWithWhereWithoutQuestionInput | Prisma.QuestionOptionUpdateManyWithWhereWithoutQuestionInput[]
   deleteMany?: Prisma.QuestionOptionScalarWhereInput | Prisma.QuestionOptionScalarWhereInput[]
-}
-
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
 }
 
 export type QuestionOptionCreateNestedOneWithoutAnswersInput = {

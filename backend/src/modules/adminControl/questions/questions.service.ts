@@ -22,9 +22,12 @@ export const questionService = {
         throw new Error("Nenhuma questão selecionada");
       }
 
-      await tx.quiz.update({
-        where: { id: quizId },
+      await tx.question.update({
+        where: {
+          id: quiz.currentQuestionId,
+        },
         data: {
+          started: true,
           questionStartedAt: new Date(),
         },
       });
@@ -64,8 +67,7 @@ export const questionService = {
           where: { id: quizId },
           data: {
             status: "FINISHED",
-            currentQuestionId: null,
-            questionStartedAt: null,
+            currentQuestionId: null
           },
         });
 
@@ -76,7 +78,6 @@ export const questionService = {
         where: { id: quizId },
         data: {
           currentQuestionId: next.id,
-          questionStartedAt: null,
         },
       });
 

@@ -45,10 +45,12 @@ model Question {
   quizId String
   quiz   Quiz   @relation(fields: [quizId], references: [id])
 
-  title    String
-  type     QuestionType
-  order    Int
-  duration Int
+  title             String
+  type              QuestionType
+  order             Int
+  duration          Int
+  started           Boolean      @default(false)
+  questionStartedAt DateTime?
 
   options QuestionOption[]
   answers UserAnswer[]
