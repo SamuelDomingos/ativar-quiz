@@ -1,7 +1,14 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { Users, CheckCircle2, ChevronRight, Timer, Play } from "lucide-react";
+import {
+  Users,
+  CheckCircle2,
+  ChevronRight,
+  Timer,
+  Play,
+  PlayCircle,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -15,13 +22,13 @@ import { useQuizMonitoring } from "@/hooks/useQuizMonitoring";
 import { useQuizControl } from "./_hooks/useQuizControl";
 import { useQuizId } from "@/hooks/useQuiz";
 import { Spinner } from "@/components/ui/spinner";
+import { ChartRadialText } from "@/components/ui/chart-radial-text";
 
 export default function QuizStartPage() {
   const params = useParams();
   const id = params.id as string;
 
   const { data: quiz, isLoading: quizLoading } = useQuizId(id);
-
   const quizControl = useQuizControl(id);
 
   const currentQuestion = quiz?.questions?.find(
@@ -29,6 +36,7 @@ export default function QuizStartPage() {
   );
 
   const { monitoringData } = useQuizMonitoring(id);
+  console.log(monitoringData);
 
   if (quizLoading) {
     return (
@@ -60,11 +68,8 @@ export default function QuizStartPage() {
   );
 
   const totalParticipants = monitoringData?.data?.totalParticipants || 0;
-  const answeredCount = monitoringData?.data?.answeredCount || 0;
+  const answeredCount = monitoringData?.data?.answersCount || 0;
   const answerStatistics = monitoringData?.data?.answerStatistics || [];
-
-  const progressPercentage =
-    totalParticipants > 0 ? (answeredCount / totalParticipants) * 100 : 0;
 
   return (
     <div className="min-h-screen from-background via-background to-background">
@@ -82,15 +87,6 @@ export default function QuizStartPage() {
               </p>
             </div>
             <div className="flex items-center gap-6">
-              <div className="text-center">
-                <div className="flex items-center gap-2 justify-center mb-1">
-                  <Timer className="w-4 h-4 text-primary" />
-                  <p className="text-sm font-medium text-foreground">Tempo</p>
-                </div>
-                <p className="text-2xl font-bold text-primary">
-                  {currentQuestion ? `${currentQuestion.duration}s` : "-"}
-                </p>
-              </div>
               <div className="text-right">
                 <p className="text-sm font-medium text-foreground">
                   Participantes Online
@@ -108,7 +104,7 @@ export default function QuizStartPage() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            {currentQuestion ? (
+            {currentQuestion?.started === true ? (
               <Card className="border-border shadow-lg">
                 <CardHeader className="pb-6 border-b border-border">
                   <div>
@@ -178,9 +174,17 @@ export default function QuizStartPage() {
               </Card>
             ) : (
               <Card className="border-border shadow-lg">
-                <CardContent className="pt-6 text-center">
+                <CardContent className="py-16 flex flex-col items-center">
+                  <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                    <PlayCircle className="w-7 h-7 text-primary" />
+                  </div>
+
+                  <h3 className="text-xl font-semibold mb-1">
+                    Pronto para iniciar
+                  </h3>
+
                   <p className="text-muted-foreground">
-                    Aguardando início do quiz...
+                    Inicie a pergunta quando todos estiverem preparados.
                   </p>
                 </CardContent>
               </Card>
@@ -201,7 +205,7 @@ export default function QuizStartPage() {
                   </Button>
                 )}
 
-                {quiz.currentQuestionId && (
+                {quiz.currentQuestionId === !quiz.questions[0]?.id && (
                   <Button
                     onClick={quizControl.handleNextQuestion}
                     disabled={!quizControl || quizControl.isLoading}
@@ -224,17 +228,22 @@ export default function QuizStartPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-foreground">
-                      Responderam
-                    </p>
-                    <p className="text-sm font-bold text-primary">
-                      {answeredCount} / {totalParticipants}
-                    </p>
-                  </div>
-                  <Progress value={progressPercentage} className="h-3" />
-                </div>
+                <ChartRadialText
+                  data={[
+                    {
+                      label: "tempo",
+                      value: currentQuestion?.duration,
+                      fill: "var(--primary)",
+                    },
+                  ]}
+                  centerLabel="segundos"
+                  config={{
+                    tempo: {
+                      label: "Tempo",
+                      color: "hsl(var(--primary))",
+                    },
+                  }}
+                />
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-center">

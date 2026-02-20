@@ -24,7 +24,6 @@ model Quiz {
   status      QuizStatus @default(WAITING)
 
   currentQuestionId String?
-  questionStartedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

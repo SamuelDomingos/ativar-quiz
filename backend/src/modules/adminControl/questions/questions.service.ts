@@ -1,90 +1,81 @@
+import { Question, QuestionOption } from "@/lib/generated/prisma/client";
 import { prisma } from "@/src/lib/prisma";
+export interface MonitoringData {
+  totalParticipants: number;
+  quizStatus: string;
+  currentQuestion?: Question & {
+    options: QuestionOption[];
+  };
+  answersCount?: number;
+  totalOptions?: number;
+  questionStartedAt?: Date | null;
+  isQuestionActive?: boolean;
+}
 
-export const questionService = {
-  async startQuestion(quizId: string) {
-    return prisma.$transaction(async (tx) => {
-      const quiz = await tx.quiz.findUnique({
-        where: { id: quizId },
-        include: {
-          questions: { orderBy: { order: "asc" } },
-        },
-      });
+export interface MonitoringResponse {
+  success: boolean;
+  data?: MonitoringData;
+  error?: string;
+}
 
-      if (!quiz) {
-        throw new Error("Quiz não encontrado");
-      }
-
-      if (quiz.status !== "STARTED") {
-        throw new Error("Quiz não iniciado");
-      }
-
-      if (!quiz.currentQuestionId) {
-        throw new Error("Nenhuma questão selecionada");
-      }
-
-      await tx.question.update({
-        where: {
-          id: quiz.currentQuestionId,
-        },
-        data: {
-          started: true,
-          questionStartedAt: new Date(),
-        },
-      });
-
-      return {
-        questionId: quiz.currentQuestionId,
-        startedAt: new Date(),
-      };
+export const getQuizMonitoringData = async (
+  quizId: string,
+): Promise<MonitoringResponse> => {
+  try {
+    const quiz = await prisma.quiz.findUnique({
+      where: { id: quizId },
+      include: {
+        sessions: true,
+      },
     });
-  },
 
-  async nextQuestion(quizId: string) {
-    return prisma.$transaction(async (tx) => {
-      const quiz = await tx.quiz.findUnique({
-        where: { id: quizId },
+    if (!quiz) {
+      return {
+        success: false,
+        error: "Quiz não encontrado",
+      };
+    }
+
+    const monitoringData: MonitoringData = {
+      totalParticipants: quiz.sessions.length,
+      quizStatus: quiz.status,
+    };
+
+    if (quiz.status === "STARTED" && quiz.currentQuestionId) {
+      const currentQuestion = await prisma.question.findUnique({
+        where: { id: quiz.currentQuestionId },
         include: {
-          questions: { orderBy: { order: "asc" } },
+          options: true,
         },
       });
 
-      if (!quiz) {
-        throw new Error("Quiz não encontrado");
-      }
-
-      if (quiz.status !== "STARTED") {
-        throw new Error("Quiz não está em andamento");
-      }
-
-      const currentIndex = quiz.questions.findIndex(
-        (q) => q.id === quiz.currentQuestionId,
-      );
-
-      const next = quiz.questions[currentIndex + 1];
-
-      if (!next) {
-        await tx.quiz.update({
-          where: { id: quizId },
-          data: {
-            status: "FINISHED",
-            currentQuestionId: null
+      if (currentQuestion) {
+        const answersCount = await prisma.userAnswer.count({
+          where: {
+            questionId: quiz.currentQuestionId,
+            session: {
+              quizId: quizId,
+            },
           },
         });
 
-        return { finished: true };
+        monitoringData.currentQuestion = currentQuestion;
+        monitoringData.answersCount = answersCount;
+        monitoringData.totalOptions = currentQuestion.options.length;
+        monitoringData.questionStartedAt = currentQuestion.questionStartedAt;
+        monitoringData.isQuestionActive = currentQuestion.started;
       }
+    }
 
-      await tx.quiz.update({
-        where: { id: quizId },
-        data: {
-          currentQuestionId: next.id,
-        },
-      });
-
-      return {
-        questionId: next.id,
-        ready: true,
-      };
-    });
-  },
+    return {
+      success: true,
+      data: monitoringData,
+    };
+  } catch (error) {
+    console.error("Erro ao buscar monitoramento do quiz:", error);
+    return {
+      success: false,
+      error: "Erro ao processar dados de monitoramento",
+    };
+  }
 };

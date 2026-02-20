@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, Timer } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useQuizMonitoring } from "@/hooks/useQuizMonitoring";
 import { useUserControl } from "./_hooks/useUserControl";
 import { Spinner } from "@/components/ui/spinner";
+import { ChartRadialText } from "@/components/ui/chart-radial-text";
 
 const ParticipantQuizPage = () => {
   const params = useParams();
@@ -38,10 +39,6 @@ const ParticipantQuizPage = () => {
     sessionId: id,
     currentQuestionId: currentQuestion?.id || "",
   });
-
-  const timePercentage = currentQuestion?.duration
-    ? currentQuestion.duration * 100
-    : 0;
 
   if (isLoading) {
     return (
@@ -131,13 +128,6 @@ const ParticipantQuizPage = () => {
             Questão {currentQuestion.order}
           </Badge>
         </div>
-
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Progresso</span>
-          <span className="text-sm text-muted-foreground">
-            {answersCount}/{totalParticipants} responderam
-          </span>
-        </div>
         <Progress
           value={
             totalParticipants > 0 ? (answersCount / totalParticipants) * 100 : 0
@@ -147,77 +137,106 @@ const ParticipantQuizPage = () => {
       </div>
 
       <div className="max-w-2xl mx-auto">
-        <Card className="border-border shadow-lg mb-6">
-          <CardHeader className="pb-6 border-b border-border">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <CardTitle className="text-2xl mb-2">
-                  {currentQuestion.title}
-                </CardTitle>
-                <CardDescription>Selecione uma opção abaixo</CardDescription>
-              </div>
-
-              {/* Timer */}
-              <div className="text-center shrink-0">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <Clock
-                    className={`w-4 h-4 ${currentQuestion?.duration <= 10 ? "text-red-500" : "text-primary"}`}
-                  />
+        {currentQuestion.started === true ? (
+          <Card className="border-border shadow-lg mb-6">
+            <CardHeader className="pb-6 border-b border-border">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <CardTitle className="text-2xl mb-2">
+                    {currentQuestion.title}
+                  </CardTitle>
+                  <CardDescription>Selecione uma opção abaixo</CardDescription>
                 </div>
-                <p
-                  className={`text-3xl font-bold ${currentQuestion?.duration <= 10 ? "text-red-500" : "text-primary"}`}
-                >
-                  {currentQuestion?.duration}s
-                </p>
-                <Progress value={timePercentage} className="h-1 mt-2 w-24" />
+                <ChartRadialText
+                  data={[
+                    {
+                      label: "tempo",
+                      value: currentQuestion?.duration,
+                      fill: "var(--primary)",
+                    },
+                  ]}
+                  centerLabel="segundos"
+                  config={{
+                    tempo: {
+                      label: "Tempo",
+                      color: "hsl(var(--primary))",
+                    },
+                  }}
+                />
               </div>
-            </div>
-          </CardHeader>
+            </CardHeader>
 
-          <CardContent className="pt-6 space-y-3">
-            {currentQuestion.options && currentQuestion.options.length > 0 ? (
-              currentQuestion.options
-                .sort((a: any, b: any) => a.order - b.order)
-                .map((option: any, index: number) => (
-                  <button
-                    key={option.id}
-                    onClick={() => {
-                      if (!hasAnswered && currentQuestion?.duration > 0) {
-                        setSelectedAnswerId(option.id);
+            <CardContent className="pt-6 space-y-3">
+              {currentQuestion.options && currentQuestion.options.length > 0 ? (
+                currentQuestion.options
+                  .sort((a: any, b: any) => a.order - b.order)
+                  .map((option: any, index: number) => (
+                    <button
+                      key={option.id}
+                      onClick={() => {
+                        if (!hasAnswered && currentQuestion?.duration > 0) {
+                          setSelectedAnswerId(option.id);
+                        }
+                      }}
+                      disabled={
+                        hasAnswered ||
+                        isSubmitting ||
+                        currentQuestion?.duration === 0
                       }
-                    }}
-                    disabled={
-                      hasAnswered ||
-                      isSubmitting ||
-                      currentQuestion?.duration === 0
-                    }
-                    className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
-                      selectedAnswerId === option.id
-                        ? "border-primary bg-primary/10 shadow-md"
-                        : "border-border hover:border-primary/50 hover:shadow-sm"
-                    } ${hasAnswered || currentQuestion?.duration === 0 ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold flex-shrink-0 ${
-                          selectedAnswerId === option.id
-                            ? "border-primary bg-primary text-white"
-                            : "border-muted-foreground text-muted-foreground"
-                        }`}
-                      >
-                        {String.fromCharCode(65 + index)}
+                      className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                        selectedAnswerId === option.id
+                          ? "border-primary bg-primary/10 shadow-md"
+                          : "border-border hover:border-primary/50 hover:shadow-sm"
+                      } ${hasAnswered || currentQuestion?.duration === 0 ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold flex-shrink-0 ${
+                            selectedAnswerId === option.id
+                              ? "border-primary bg-primary text-white"
+                              : "border-muted-foreground text-muted-foreground"
+                          }`}
+                        >
+                          {String.fromCharCode(65 + index)}
+                        </div>
+                        <span className="font-medium text-base flex-1">
+                          {option.label}
+                        </span>
                       </div>
-                      <span className="font-medium text-base flex-1">
-                        {option.label}
-                      </span>
-                    </div>
-                  </button>
-                ))
-            ) : (
-              <p className="text-muted-foreground">Carregando opções...</p>
-            )}
-          </CardContent>
-        </Card>
+                    </button>
+                  ))
+              ) : (
+                <p className="text-muted-foreground">Carregando opções...</p>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-border shadow-lg mb-6 overflow-hidden">
+            <CardHeader className="pb-6 border-b border-border">
+              <CardTitle className="text-2xl">Prepare-se...</CardTitle>
+              <CardDescription>
+                Uma nova pergunta está prestes a aparecer
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="pt-10 pb-12">
+              <div className="flex flex-col items-center justify-center text-center">
+                <div className="relative mb-8">
+                  <Spinner className="w-16 h-16" />
+                </div>
+
+                <h3 className="text-xl font-semibold mb-2 tracking-tight">
+                  Aguardando iníciar a pergunta
+                </h3>
+
+                <p className="text-muted-foreground max-w-md">
+                  Fique atento — quando a pergunta aparecer, você terá poucos
+                  segundos para responder.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Alerta se tempo acabou */}
         {currentQuestion?.duration === 0 && !hasAnswered && (
@@ -230,20 +249,23 @@ const ParticipantQuizPage = () => {
         )}
 
         {/* Alerta se não respondeu */}
-        {!hasAnswered && !selectedAnswerId && currentQuestion?.duration > 0 && (
-          <Alert className="mb-6 bg-amber-50 border-amber-200">
-            <AlertCircle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-amber-700">
-              Selecione uma opção para responder a pergunta
-            </AlertDescription>
-          </Alert>
-        )}
+        {currentQuestion.started === true &&
+          !hasAnswered &&
+          !selectedAnswerId &&
+          currentQuestion?.duration > 0 && (
+            <Alert className="mb-6 bg-amber-50 border-amber-200">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-700">
+                Selecione uma opção para responder a pergunta
+              </AlertDescription>
+            </Alert>
+          )}
 
         {/* Botão Responder */}
-        {!hasAnswered && currentQuestion?.duration > 0 ? (
+        {currentQuestion.started === true && currentQuestion?.duration > 0 ? (
           <Button
             onClick={handleSubmitAnswer}
-            disabled={!selectedAnswerId || isSubmitting}
+            disabled={isSubmitting}
             size="lg"
             className="w-full"
           >
