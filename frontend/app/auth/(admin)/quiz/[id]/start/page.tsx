@@ -3,42 +3,32 @@
 import { useParams } from "next/navigation";
 import {
   Users,
-  CheckCircle2,
   ChevronRight,
-  Timer,
   Play,
   PlayCircle,
+  AlertCircle,
+  ChevronLeft,
 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { useQuizMonitoring } from "@/hooks/useQuizMonitoring";
 import { useQuizControl } from "./_hooks/useQuizControl";
-import { useQuizId } from "@/hooks/useQuiz";
 import { Spinner } from "@/components/ui/spinner";
-import { ChartRadialText } from "@/components/ui/chart-radial-text";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import CardCurrentQuestion from "./_components/cardCurrentQuestion";
+import { formatTime, getTimeColor } from "@/lib/utils";
 
 export default function QuizStartPage() {
   const params = useParams();
   const id = params.id as string;
 
-  const { data: quiz, isLoading: quizLoading } = useQuizId(id);
   const quizControl = useQuizControl(id);
 
-  const currentQuestion = quiz?.questions?.find(
-    (q) => q.id === quiz.currentQuestionId,
-  );
+  const { monitoringData, isLoading, timeRemaining } = useQuizMonitoring(id);
 
-  const { monitoringData } = useQuizMonitoring(id);
-  console.log(monitoringData);
+  const currentQuestionId = monitoringData?.data?.currentQuestion?.id ?? null;
 
-  if (quizLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen from-background via-background to-background flex items-center justify-center">
         <div className="text-center">
@@ -49,27 +39,29 @@ export default function QuizStartPage() {
     );
   }
 
-  if (!quiz) {
+  if (!monitoringData || !monitoringData.data) {
     return (
       <div className="min-h-screen from-background via-background to-background flex items-center justify-center">
         <Card className="w-96">
-          <CardContent className="pt-6">
-            <p className="text-muted-foreground text-center">
-              Quiz não encontrado
-            </p>
+          <CardHeader>
+            <CardTitle>Erro</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Alert className="bg-red-50 border-red-200">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-700">
+                Não foi possível carregar os dados do quiz.
+              </AlertDescription>
+            </Alert>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  const currentQuestionIndex = quiz.questions.findIndex(
-    (q) => q.id === quiz.currentQuestionId,
-  );
-
   const totalParticipants = monitoringData?.data?.totalParticipants || 0;
   const answeredCount = monitoringData?.data?.answersCount || 0;
-  const answerStatistics = monitoringData?.data?.answerStatistics || [];
+  const totalDuration = monitoringData?.data?.currentQuestion?.duration ?? 0;
 
   return (
     <div className="min-h-screen from-background via-background to-background">
@@ -79,8 +71,8 @@ export default function QuizStartPage() {
             <div>
               <h1 className="text-2xl font-bold text-foreground">
                 Pergunta{" "}
-                {currentQuestionIndex >= 0 ? currentQuestionIndex + 1 : "-"} de{" "}
-                {quiz.questions.length}
+                {monitoringData?.data?.currentQuestion?.title ||
+                  "Aguardando início..."}
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
                 Acompanhando em tempo real
@@ -104,74 +96,12 @@ export default function QuizStartPage() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            {currentQuestion?.started === true ? (
-              <Card className="border-border shadow-lg">
-                <CardHeader className="pb-6 border-b border-border">
-                  <div>
-                    <CardTitle className="text-2xl mb-2">
-                      {currentQuestion.title}
-                    </CardTitle>
-                    <CardDescription>
-                      Resposta correta destacada em verde
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-6 space-y-3">
-                  {currentQuestion.options.map((option, index) => {
-                    const stat = answerStatistics.find(
-                      (s: any) => s.optionId === option.id,
-                    ) || {
-                      count: 0,
-                      percentage: 0,
-                    };
-
-                    return (
-                      <div
-                        key={option.id}
-                        className={`w-full p-4 rounded-lg border-2 transition-all ${
-                          option.isCorrect
-                            ? "border-green-500 bg-green-500/10"
-                            : "border-border bg-muted/30"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-4">
-                            <div
-                              className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold ${
-                                option.isCorrect
-                                  ? "border-green-600 bg-green-600 text-white"
-                                  : "border-muted-foreground text-muted-foreground"
-                              }`}
-                            >
-                              {String.fromCharCode(65 + index)}
-                            </div>
-                            <span className="font-medium text-base">
-                              {option.label}
-                            </span>
-                          </div>
-                          {option.isCorrect && (
-                            <CheckCircle2 className="w-5 h-5 text-green-600" />
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 ml-12">
-                          <Progress
-                            value={stat.percentage}
-                            className="h-2 flex-1"
-                          />
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs font-bold text-primary">
-                              {stat.count}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              ({stat.percentage.toFixed(0)}%)
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
+            {monitoringData?.data?.currentQuestion ? (
+              <CardCurrentQuestion
+                title={monitoringData?.data?.currentQuestion?.title || ""}
+                options={monitoringData?.data?.currentQuestion?.options || []}
+                optionCounts={monitoringData?.data?.optionCounts || []}
+              />
             ) : (
               <Card className="border-border shadow-lg">
                 <CardContent className="py-16 flex flex-col items-center">
@@ -192,9 +122,9 @@ export default function QuizStartPage() {
 
             <div className="flex flex-col gap-3">
               <div className="flex gap-3">
-                {quiz.currentQuestionId === quiz.questions[0]?.id && (
+                {!currentQuestionId && (
                   <Button
-                    onClick={quizControl.handleStartQuiz}
+                    onClick={quizControl.handleNextQuestion}
                     disabled={quizControl.isLoading}
                     size="lg"
                     className="flex-1"
@@ -205,14 +135,26 @@ export default function QuizStartPage() {
                   </Button>
                 )}
 
-                {quiz.currentQuestionId === !quiz.questions[0]?.id && (
+                {currentQuestionId && (
                   <Button
-                    onClick={quizControl.handleNextQuestion}
-                    disabled={!quizControl || quizControl.isLoading}
+                    onClick={quizControl.handleBackQuestion}
+                    disabled={quizControl.isLoading}
                     size="lg"
                     className="flex-1"
                   >
-                    {!quizControl ? "Quiz Finalizado" : "Próxima"}
+                    <ChevronLeft className="w-4 h-4 mr-2" />
+                    Voltar
+                  </Button>
+                )}
+
+                {currentQuestionId && (
+                  <Button
+                    onClick={quizControl.handleNextQuestion}
+                    disabled={quizControl.isLoading}
+                    size="lg"
+                    className="flex-1"
+                  >
+                    Próxima
                     <ChevronRight className="w-4 h-4 ml-2" />
                   </Button>
                 )}
@@ -228,22 +170,29 @@ export default function QuizStartPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <ChartRadialText
-                  data={[
-                    {
-                      label: "tempo",
-                      value: currentQuestion?.duration,
-                      fill: "var(--primary)",
-                    },
-                  ]}
-                  centerLabel="segundos"
-                  config={{
-                    tempo: {
-                      label: "Tempo",
-                      color: "hsl(var(--primary))",
-                    },
-                  }}
-                />
+                {totalDuration > 0 && (
+                  <div className="flex flex-col items-center justify-center py-4 border border-border rounded-xl">
+                    <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">
+                      Tempo restante
+                    </p>
+                    <p
+                      className={`text-5xl font-bold tabular-nums transition-colors ${getTimeColor(timeRemaining, totalDuration)}`}
+                    >
+                      {formatTime(timeRemaining)}
+                    </p>
+                    <div className="w-full mt-3 px-4">
+                      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-1000"
+                          style={{
+                            width: `${Math.min(100, (timeRemaining / totalDuration) * 100)}%`,
+                            backgroundColor: "currentColor",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-center">

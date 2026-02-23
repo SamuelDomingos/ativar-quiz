@@ -93,6 +93,7 @@ export const QuizScalarFieldEnum = {
   description: 'description',
   status: 'status',
   currentQuestionId: 'currentQuestionId',
+  questionStartedAt: 'questionStartedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -107,8 +108,6 @@ export const QuestionScalarFieldEnum = {
   type: 'type',
   order: 'order',
   duration: 'duration',
-  started: 'started',
-  questionStartedAt: 'questionStartedAt',
   createdAt: 'createdAt'
 } as const
 

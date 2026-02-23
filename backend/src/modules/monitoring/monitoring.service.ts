@@ -1,15 +1,17 @@
-import { Question, QuestionOption } from "@/src/lib/generated/prisma/client";
 import { prisma } from "@/src/lib/prisma";
+import { Question, QuestionOption } from "@/src/lib/prisma/browser";
 
 export interface MonitoringData {
   totalParticipants: number;
   quizStatus: string;
+  questionStartedAt?: Date;
   currentQuestion?: Question & {
     options: QuestionOption[];
   };
 
   answersCount?: number;
-  totalOptions?: number;
+  optionCounts?: { optionId: string; count: number }[];
+  userAnswerOptionId?: string | null;
 }
 
 export interface MonitoringResponse {
@@ -20,6 +22,7 @@ export interface MonitoringResponse {
 
 export const getQuizMonitoringData = async (
   quizId: string,
+  sessionId?: string,
 ): Promise<MonitoringResponse> => {
   try {
     const quiz = await prisma.quiz.findUnique({
@@ -59,9 +62,37 @@ export const getQuizMonitoringData = async (
           },
         });
 
+        const optionCounts = await prisma.userAnswer.groupBy({
+          by: ["optionId"],
+          where: {
+            questionId: quiz.currentQuestionId,
+            session: { quizId },
+          },
+          _count: { optionId: true },
+        });
+
+        if (sessionId) {
+
+          const userAnswer = await prisma.userAnswer.findUnique({
+            where: {
+              sessionId_questionId: {
+                sessionId,
+                questionId: quiz.currentQuestionId,
+              },
+            },
+          });
+          monitoringData.userAnswerOptionId = userAnswer?.optionId ?? null;
+        }
+
         monitoringData.currentQuestion = currentQuestion;
+        monitoringData.questionStartedAt = quiz.questionStartedAt || undefined;
         monitoringData.answersCount = answersCount;
-        monitoringData.totalOptions = currentQuestion.options.length;
+        monitoringData.optionCounts = optionCounts.map(
+          (item: { optionId: string; _count: { optionId: number } }) => ({
+            optionId: item.optionId,
+            count: item._count.optionId,
+          }),
+        );
       }
     }
 

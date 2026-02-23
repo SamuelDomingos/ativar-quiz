@@ -8,9 +8,7 @@ export async function markAnswer(
   return prisma.$transaction(async (tx) => {
     const session = await tx.quizSession.findUnique({
       where: { id: sessionId },
-      include: {
-        quiz: true,
-      },
+      include: { quiz: true },
     });
 
     if (!session) {
@@ -21,15 +19,12 @@ export async function markAnswer(
       throw new Error("Questão não está ativa");
     }
 
-    const question = await tx.question.findUnique({
-      where: { id: questionId },
+    const existingAnswer = await tx.userAnswer.findUnique({
+      where: { sessionId_questionId: { sessionId, questionId } },
     });
 
-    const elapsed =
-      (Date.now() - (question?.questionStartedAt?.getTime() ?? 0)) / 1000;
-
-    if (elapsed > question!.duration) {
-      throw new Error("Tempo esgotado");
+    if (existingAnswer) {
+      throw new Error("Você já respondeu esta questão");
     }
 
     await tx.userAnswer.upsert({
@@ -47,6 +42,6 @@ export async function markAnswer(
       },
     });
 
-    return true;
+    return session;
   });
 }

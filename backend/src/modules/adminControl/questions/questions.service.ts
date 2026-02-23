@@ -1,81 +1,84 @@
-import { Question, QuestionOption } from "@/lib/generated/prisma/client";
 import { prisma } from "@/src/lib/prisma";
-export interface MonitoringData {
-  totalParticipants: number;
-  quizStatus: string;
-  currentQuestion?: Question & {
-    options: QuestionOption[];
-  };
-  answersCount?: number;
-  totalOptions?: number;
-  questionStartedAt?: Date | null;
-  isQuestionActive?: boolean;
-}
 
-export interface MonitoringResponse {
-  success: boolean;
-  data?: MonitoringData;
-  error?: string;
-}
-
-export const getQuizMonitoringData = async (
-  quizId: string,
-): Promise<MonitoringResponse> => {
-  try {
-    const quiz = await prisma.quiz.findUnique({
-      where: { id: quizId },
-      include: {
-        sessions: true,
-      },
-    });
-
-    if (!quiz) {
-      return {
-        success: false,
-        error: "Quiz não encontrado",
-      };
-    }
-
-    const monitoringData: MonitoringData = {
-      totalParticipants: quiz.sessions.length,
-      quizStatus: quiz.status,
-    };
-
-    if (quiz.status === "STARTED" && quiz.currentQuestionId) {
-      const currentQuestion = await prisma.question.findUnique({
-        where: { id: quiz.currentQuestionId },
+export const questionService = {
+  async actionQuestion(quizId: string, action: "next" | "back") {
+    return prisma.$transaction(async (tx) => {
+      const quiz = await tx.quiz.findUnique({
+        where: { id: quizId },
         include: {
-          options: true,
+          questions: {
+            orderBy: { order: "asc" },
+          },
         },
       });
 
-      if (currentQuestion) {
-        const answersCount = await prisma.userAnswer.count({
-          where: {
-            questionId: quiz.currentQuestionId,
-            session: {
-              quizId: quizId,
-            },
+      if (!quiz) {
+        throw new Error("Quiz não encontrado");
+      }
+
+      // Primeira questão — só permitido no next
+      if (!quiz.currentQuestionId) {
+        if (action === "back") {
+          throw new Error("Nenhuma questão foi iniciada");
+        }
+
+        const firstQuestion = quiz.questions[0];
+        if (!firstQuestion) throw new Error("Quiz não possui questões.");
+
+        await tx.quiz.update({
+          where: { id: quizId },
+          data: {
+            currentQuestionId: firstQuestion.id,
+            questionStartedAt: new Date(),
           },
         });
 
-        monitoringData.currentQuestion = currentQuestion;
-        monitoringData.answersCount = answersCount;
-        monitoringData.totalOptions = currentQuestion.options.length;
-        monitoringData.questionStartedAt = currentQuestion.questionStartedAt;
-        monitoringData.isQuestionActive = currentQuestion.started;
+        return { questionId: firstQuestion.id, ready: true };
       }
-    }
 
-    return {
-      success: true,
-      data: monitoringData,
-    };
-  } catch (error) {
-    console.error("Erro ao buscar monitoramento do quiz:", error);
-    return {
-      success: false,
-      error: "Erro ao processar dados de monitoramento",
-    };
-  }
+      const currentQuestion = await tx.question.findUnique({
+        where: { id: quiz.currentQuestionId },
+      });
+
+      if (!currentQuestion) {
+        throw new Error("Questão atual não encontrada");
+      }
+
+      const currentIndex = quiz.questions.findIndex(
+        (q) => q.id === currentQuestion.id,
+      );
+
+      const offset = action === "next" ? 1 : -1;
+      const nextQuestionData = quiz.questions[currentIndex + offset];
+
+      if (!nextQuestionData) {
+        if (action === "back") {
+          await tx.quiz.update({
+            where: { id: quizId },
+            data: {
+              currentQuestionId: null,
+              questionStartedAt: null,
+            },
+          });
+
+          return { questionId: null, ready: false };
+        }
+
+        throw new Error("Não há próxima questão. Quiz finalizado.");
+      }
+
+      await tx.quiz.update({
+        where: { id: quizId },
+        data: {
+          currentQuestionId: nextQuestionData.id,
+          questionStartedAt: new Date(),
+        },
+      });
+
+      return {
+        questionId: nextQuestionData.id,
+        ready: true,
+      };
+    });
+  },
 };

@@ -3,14 +3,13 @@ import { questionService } from "./questions.service";
 import { getQuizMonitoringData } from "../../monitoring/monitoring.service";
 
 export function registerQuestionEvents(io: Server, socket: Socket) {
-  socket.on("question:start", async ({ quizId }) => {
+  socket.on("question:back", async ({ quizId }) => {
     try {
-      const result = await questionService.startQuestion(quizId);
+      const result = await questionService.actionQuestion(quizId, "back");
 
-      io.to(quizId).emit("question:started", {
+      io.to(quizId).emit("question:back", {
         quizId,
         questionId: result.questionId,
-        startedAt: result.startedAt,
       });
 
       const monitoringData = await getQuizMonitoringData(quizId);
@@ -24,14 +23,14 @@ export function registerQuestionEvents(io: Server, socket: Socket) {
 
   socket.on("question:next", async ({ quizId }) => {
     try {
-      const result = await questionService.nextQuestion(quizId);
+      const result = await questionService.actionQuestion(quizId, "next");
 
-      if (result.finished) {
+      if (result && !result.ready) {
         io.to(quizId).emit("quiz:finished", { quizId });
         return;
       }
 
-      io.to(quizId).emit("question:ready", {
+      io.to(quizId).emit("question:next", {
         quizId,
         questionId: result.questionId,
       });

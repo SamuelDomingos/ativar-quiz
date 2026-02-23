@@ -1,24 +1,20 @@
-
 import { useEffect, useState } from "react";
 import { getSocket } from "@/lib/socket";
-import { toast } from "sonner";
-
+import { useQueryClient } from "@tanstack/react-query";
 interface UseQuizControlReturn {
-  handleStartQuiz: () => void;
   handleNextQuestion: () => void;
-  currentQuestion: any;
+  handleBackQuestion: () => void;
   isLoading: boolean;
 }
 
 export function useQuizControl(quizId: string): UseQuizControlReturn {
   const [isLoading, setIsLoading] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState<any>(null);
-  const [totalQuestions, setTotalQuestions] = useState(0);
+  const queryClient = useQueryClient();
 
-  const handleStartQuiz = () => {
+  const handleBackQuestion = () => {
     setIsLoading(true);
     const socket = getSocket();
-    socket.emit("question:start", { quizId });
+    socket.emit("question:back", { quizId });
   };
 
   const handleNextQuestion = () => {
@@ -30,46 +26,39 @@ export function useQuizControl(quizId: string): UseQuizControlReturn {
   useEffect(() => {
     const socket = getSocket();
 
-    socket.on("question:started", (data) => {
+    const invalidateQuiz = () => {
+      queryClient.invalidateQueries({ queryKey: ["quiz", quizId] });
+    };
+
+    socket.on("question:next", () => {
       setIsLoading(false);
-      setCurrentQuestion(data);
-      toast.success("Questão iniciada!");
+      invalidateQuiz();
     });
 
-    socket.on("question:ready", (data) => {
+    socket.on("question:back", () => {
       setIsLoading(false);
-      setCurrentQuestion(data);
-      toast.success("Próxima questão!");
+      invalidateQuiz();
     });
 
     socket.on("quiz:finished", () => {
       setIsLoading(false);
-      toast.success("Quiz finalizado!");
+      invalidateQuiz();
     });
 
-    socket.on("question:error", (error) => {
+    socket.on("question:error", () => {
       setIsLoading(false);
-      toast.error(error.message);
-    });
-
-    socket.on("monitoring:quiz-data", (data) => {
-      if (data.data?.currentQuestion) {
-        setTotalQuestions(data.data.currentQuestion.order || totalQuestions);
-      }
     });
 
     return () => {
-      socket.off("question:started");
-      socket.off("question:ready");
+      socket.off("question:next");
+      socket.off("question:back");
       socket.off("quiz:finished");
       socket.off("question:error");
-      socket.off("monitoring:quiz-data");
     };
-  }, []);
+  }, [quizId, queryClient]);
 
   return {
-    currentQuestion,
-    handleStartQuiz,
+    handleBackQuestion,
     handleNextQuestion,
     isLoading,
   };

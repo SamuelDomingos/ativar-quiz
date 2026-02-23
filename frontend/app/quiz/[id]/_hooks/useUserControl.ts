@@ -1,34 +1,27 @@
-// hooks/useUserControl.ts
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { getSocket } from "@/lib/socket";
-import { toast } from "sonner";
 
 export function useUserControl({
   currentQuestionId,
 }: {
-  sessionId: string;
   currentQuestionId: string;
 }) {
   const [selectedAnswerId, setSelectedAnswerId] = useState<string | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmitAnswer = useCallback(async () => {
-    if (!selectedAnswerId || !currentQuestionId || hasAnswered) return;
+  const selectAnswer = (optionId: string) => {
+    if (hasAnswered || isSubmitting || !currentQuestionId) return;
 
+    setSelectedAnswerId(optionId);
     setIsSubmitting(true);
-    const socket = getSocket();
 
+    const socket = getSocket();
     socket.emit("answer:submit", {
       questionId: currentQuestionId,
-      optionId: selectedAnswerId,
+      optionId,
     });
-  }, [selectedAnswerId, currentQuestionId, hasAnswered]);
-
-  const resetAnswer = useCallback(() => {
-    setSelectedAnswerId(null);
-    setHasAnswered(false);
-  }, []);
+  };
 
   useEffect(() => {
     const socket = getSocket();
@@ -36,12 +29,11 @@ export function useUserControl({
     const handleAnswerConfirmed = () => {
       setHasAnswered(true);
       setIsSubmitting(false);
-      toast.success("Resposta registrada!");
     };
 
-    const handleAnswerError = (error: any) => {
+    const handleAnswerError = () => {
       setIsSubmitting(false);
-      toast.error(error);
+      setSelectedAnswerId(null)
     };
 
     socket.on("answer:confirmed", handleAnswerConfirmed);
@@ -53,13 +45,16 @@ export function useUserControl({
     };
   }, []);
 
+  useEffect(() => {
+  setSelectedAnswerId(null);
+  setHasAnswered(false);
+  setIsSubmitting(false);
+}, [currentQuestionId]);
+
   return {
     selectedAnswerId,
     hasAnswered,
-    setSelectedAnswerId,
-    handleSubmitAnswer,
-    resetAnswer,
     isSubmitting,
-    isLoading: isSubmitting,
+    selectAnswer,
   };
 }

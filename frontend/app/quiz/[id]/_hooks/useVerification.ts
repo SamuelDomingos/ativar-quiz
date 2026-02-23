@@ -1,4 +1,3 @@
-// hooks/useVerifyQuiz.ts
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { getSocket } from "@/lib/socket";
@@ -17,10 +16,6 @@ interface QuizData {
   totalOptions?: number;
 }
 
-interface JoinData {
-  sessionId: string;
-}
-
 export const useVerifyQuiz = (id: string) => {
   const router = useRouter();
   const { ip, isLoading: isLoadingIP } = useUserIP();
@@ -28,11 +23,10 @@ export const useVerifyQuiz = (id: string) => {
   const [data, setData] = useState<QuizData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isJoining, setIsJoining] = useState(false);
-  const [joinData, setJoinData] = useState<JoinData | null>(null);
 
   const hasJoinedRef = useRef(false);
   const shouldJoinRef = useRef(false);
+  const quizStatusRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -40,36 +34,36 @@ export const useVerifyQuiz = (id: string) => {
     const socket = getSocket();
     socket.emit("monitoring:get-quiz-data", { quizId: id });
 
-    const handleMonitoringData = (monitoringData: any) => {
+    socket.on("monitoring:quiz-data", (monitoringData: any) => {
       if (monitoringData.success && monitoringData.data) {
+        const status = monitoringData.data.quizStatus;
+        quizStatusRef.current = status;
         setData(monitoringData.data);
         setIsLoading(false);
-        setError(null);
 
-
-        const status = monitoringData.data.quizStatus;
         shouldJoinRef.current =
           (status === "WAITING" || status === "STARTED") &&
           !hasJoinedRef.current;
+
+        if (status === "PAUSED" || status === "FINISHED") {
+          router.push("/");
+        }
       } else {
         setError(monitoringData.error || "Erro ao carregar quiz");
         setIsLoading(false);
       }
-    };
+    });
 
-    const handleMonitoringError = (err: any) => {
+    socket.on("monitoring:error", (err: any) => {
       setError(err.message);
       setIsLoading(false);
-    };
-
-    socket.on("monitoring:quiz-data", handleMonitoringData);
-    socket.on("monitoring:error", handleMonitoringError);
+    });
 
     return () => {
-      socket.off("monitoring:quiz-data", handleMonitoringData);
-      socket.off("monitoring:error", handleMonitoringError);
+      socket.off("monitoring:quiz-data");
+      socket.off("monitoring:error");
     };
-  }, [id]);
+  }, [id, router]);
 
   useEffect(() => {
     if (
@@ -80,61 +74,36 @@ export const useVerifyQuiz = (id: string) => {
       !hasJoinedRef.current
     ) {
       hasJoinedRef.current = true;
-
       const socket = getSocket();
-      socket.emit("player:join", {
-        quizId: id,
-        userName: `Usuário-${ip.split(".").pop()}` || "Usuário",
-      });
+      socket.emit("player:join", { quizId: id, userName: ip });
     }
   }, [isLoading, isLoadingIP, ip, id]);
-
-  // Redirecionar baseado no status
-  useEffect(() => {
-    if (!isLoading && data) {
-      const status = data.quizStatus;
-
-      if (status === "PAUSED" || status === "FINISHED") {
-        router.push("/");
-        return;
-      }
-
-      if (status === "STARTED") {
-        router.push(`/quiz/${id}/started`);
-      }
-    }
-  }, [data, isLoading, router, id]);
 
   useEffect(() => {
     const socket = getSocket();
 
-    const handlePlayerJoined = (joinedData: JoinData) => {
-      setJoinData(joinedData);
-      setIsJoining(false);
-    };
+    socket.on("player:joined", (joinData: { sessionId: string }) => {
+      if (joinData?.sessionId) {
+        sessionStorage.setItem("sessionId", joinData.sessionId);
+      }
+    });
 
-    const handlePlayerError = (err: any) => {
+    socket.on("player:error", (err: any) => {
       setError(err.message);
-      setIsJoining(false);
       hasJoinedRef.current = false;
       shouldJoinRef.current = false;
-    };
-
-    socket.on("player:joined", handlePlayerJoined);
-    socket.on("player:error", handlePlayerError);
+    });
 
     return () => {
-      socket.off("player:joined", handlePlayerJoined);
-      socket.off("player:error", handlePlayerError);
+      socket.off("player:joined");
+      socket.off("player:error");
     };
-  }, []);
+  }, [id, router]);
 
   return {
     data,
-    isLoading: isLoading || isLoadingIP || isJoining,
+    isLoading: isLoading || isLoadingIP,
     error,
     isAvailable: !!data && !error,
-    joinData,
-    userIP: ip,
   };
 };
