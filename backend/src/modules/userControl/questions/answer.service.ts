@@ -19,15 +19,15 @@ export async function markAnswer(
       throw new Error("Questão não está ativa");
     }
 
-    const existingAnswer = await tx.userAnswer.findUnique({
-      where: { sessionId_questionId: { sessionId, questionId } },
+    const option = await tx.questionOption.findUnique({
+      where: { id: optionId },
     });
 
-    if (existingAnswer) {
-      throw new Error("Você já respondeu esta questão");
+    if (!option) {
+      throw new Error("Opção inválida");
     }
 
-    await tx.userAnswer.upsert({
+    const answer = await tx.userAnswer.upsert({
       where: {
         sessionId_questionId: { sessionId, questionId },
       },
@@ -39,9 +39,13 @@ export async function markAnswer(
         sessionId,
         questionId,
         optionId,
+        answeredAt: new Date(),
       },
     });
 
-    return session;
+    return {
+      session,
+      answer,
+    };
   });
 }
