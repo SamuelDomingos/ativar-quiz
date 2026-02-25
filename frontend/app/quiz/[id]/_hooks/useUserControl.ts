@@ -7,11 +7,12 @@ export function useUserControl({
   currentQuestionId: string;
 }) {
   const [selectedAnswerId, setSelectedAnswerId] = useState<string | null>(null);
-  const [hasAnswered, setHasAnswered] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingCurrentAnswer, setIsLoadingCurrentAnswer] = useState(false);
 
   const selectAnswer = (optionId: string) => {
-    if (hasAnswered || isSubmitting || !currentQuestionId) return;
+    // Só bloqueia se está enviando no momento
+    if (isSubmitting || !currentQuestionId) return;
 
     setSelectedAnswerId(optionId);
     setIsSubmitting(true);
@@ -23,17 +24,52 @@ export function useUserControl({
     });
   };
 
+  const fetchCurrentAnswer = (questionId: string) => {
+    if (!questionId) return;
+
+    setIsLoadingCurrentAnswer(true);
+
+    const socket = getSocket();
+
+    socket.emit("answer:get-current", {
+      questionId,
+    });
+
+    const handleAnswerCurrent = ({
+      questionId: qId,
+      optionId,
+    }: {
+      questionId: string;
+      optionId: string | null;
+      answeredAt: string | null;
+    }) => {
+      if (qId === questionId) {
+        setSelectedAnswerId(optionId);
+        setIsLoadingCurrentAnswer(false);
+
+        socket.off("answer:current", handleAnswerCurrent);
+      }
+    };
+
+    socket.on("answer:current", handleAnswerCurrent);
+
+    const timeout = setTimeout(() => {
+      socket.off("answer:current", handleAnswerCurrent);
+      setIsLoadingCurrentAnswer(false);
+    }, 5000);
+
+    return () => clearTimeout(timeout);
+  };
+
   useEffect(() => {
     const socket = getSocket();
 
     const handleAnswerConfirmed = () => {
-      setHasAnswered(true);
       setIsSubmitting(false);
     };
 
     const handleAnswerError = () => {
       setIsSubmitting(false);
-      setSelectedAnswerId(null)
     };
 
     socket.on("answer:confirmed", handleAnswerConfirmed);
@@ -46,15 +82,21 @@ export function useUserControl({
   }, []);
 
   useEffect(() => {
-  setSelectedAnswerId(null);
-  setHasAnswered(false);
-  setIsSubmitting(false);
-}, [currentQuestionId]);
+    if (!currentQuestionId) {
+      setSelectedAnswerId(null);
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Puxar resposta atual quando questão muda
+    fetchCurrentAnswer(currentQuestionId);
+  }, [currentQuestionId]);
 
   return {
     selectedAnswerId,
-    hasAnswered,
     isSubmitting,
+    isLoadingCurrentAnswer,
     selectAnswer,
+    fetchCurrentAnswer,
   };
 }

@@ -7,12 +7,14 @@ import {
 } from "@/components/ui/card";
 import { Question, QuestionOption } from "@/lib/generated/prisma/client";
 import { formatTime, getTimeColor } from "@/lib/utils";
+import { CheckCircle2 } from "lucide-react";
 
 const CardQuestion = ({
   currentQuestion,
   timeRemaining,
   selectAnswer,
   userAnswerOptionId,
+  isSubmitting = false,
 }: {
   currentQuestion: Question & {
     options: QuestionOption[];
@@ -20,9 +22,8 @@ const CardQuestion = ({
   timeRemaining: number;
   selectAnswer: (optionId: string) => void;
   userAnswerOptionId?: string | null;
+  isSubmitting?: boolean;
 }) => {
-
-
   const totalDuration = currentQuestion.duration ?? 0;
   const hasAnswered = !!userAnswerOptionId;
 
@@ -35,7 +36,9 @@ const CardQuestion = ({
               {currentQuestion.title}
             </CardTitle>
             <CardDescription>
-              {hasAnswered ? "Você já respondeu esta questão" : "Selecione uma opção abaixo"}
+              {hasAnswered
+                ? "Você já respondeu esta questão"
+                : "Selecione uma opção abaixo"}
             </CardDescription>
           </div>
           {totalDuration > 0 && (
@@ -43,7 +46,9 @@ const CardQuestion = ({
               <p className="text-sm text-muted-foreground uppercase tracking-widest mb-1">
                 Tempo restante
               </p>
-              <p className={`text-3xl font-bold tabular-nums transition-colors ${getTimeColor(timeRemaining, totalDuration)}`}>
+              <p
+                className={`text-3xl font-bold tabular-nums transition-colors ${getTimeColor(timeRemaining, totalDuration)}`}
+              >
                 {formatTime(timeRemaining)}
               </p>
             </div>
@@ -52,42 +57,39 @@ const CardQuestion = ({
       </CardHeader>
 
       <CardContent className="pt-6 space-y-3">
-        {currentQuestion.options
-          .sort((a: any, b: any) => a.order - b.order)
-          .map((option: any, index: number) => {
-            const isSelected = userAnswerOptionId === option.id;
+        {currentQuestion.options.map((option) => (
+          <button
+            key={option.id}
+            onClick={() => selectAnswer(option.id)}
+            disabled={timeRemaining <= 0}
+            className={`
+    w-full p-4 rounded-lg border-2 transition-all text-left font-medium
+    flex items-center justify-between
+    ${
+      userAnswerOptionId === option.id
+        ? "border-primary bg-primary/10 text-primary"
+        : "border-border bg-background text-foreground hover:border-muted-foreground"
+    }
+    ${timeRemaining <= 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+  `}
+          >
+            <span>{option.label}</span>
 
-            return (
-              <button
-                key={option.id}
-                onClick={() => {
-                  if (timeRemaining > 0) selectAnswer(option.id);
-                }}
-                disabled={timeRemaining === 0}
-                className={`w-full p-4 rounded-lg border-2 transition-all text-left
-                  ${isSelected
-                    ? "border-primary bg-primary/10 shadow-md"
-                    : "border-border hover:border-primary/50 hover:shadow-sm"
-                  }
-                  ${timeRemaining === 0 ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
-                `}
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold
-                    ${isSelected
-                      ? "border-primary bg-primary text-white"
-                      : "border-muted-foreground text-muted-foreground"
-                    }`}
-                  >
-                    {String.fromCharCode(65 + index)}
-                  </div>
-                  <span className="font-medium text-base flex-1">
-                    {option.label}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
+            {userAnswerOptionId === option.id && (
+              <div className="flex items-center gap-2">
+                {isSubmitting && (
+                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                )}
+                {!isSubmitting && hasAnswered && (
+                  <CheckCircle2 className="w-5 h-5 text-primary" />
+                )}
+                {!isSubmitting && !hasAnswered && (
+                  <span className="text-primary font-bold">✓</span>
+                )}
+              </div>
+            )}
+          </button>
+        ))}
       </CardContent>
     </Card>
   );

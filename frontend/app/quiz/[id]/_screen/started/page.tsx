@@ -24,7 +24,12 @@ const ParticipantQuizPage = () => {
 
   const currentQuestion = monitoringData?.data?.currentQuestion;
 
-  const { selectAnswer, hasAnswered } = useUserControl({
+  const {
+    selectedAnswerId,
+    isSubmitting,
+    isLoadingCurrentAnswer,
+    selectAnswer,
+  } = useUserControl({
     currentQuestionId: currentQuestion?.id || "",
   });
 
@@ -59,26 +64,6 @@ const ParticipantQuizPage = () => {
     );
   }
 
-  if (monitoringData?.data?.quizStatus === "FINISHED") {
-    return (
-      <div className="min-h-screen from-background via-background to-background flex items-center justify-center">
-        <Card className="w-96">
-          <CardHeader>
-            <CardTitle>Quiz Finalizado</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Alert className="bg-green-50 border-green-200">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-700">
-                Quiz finalizado! Obrigado por participar.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   if (!currentQuestion) {
     return (
       <div className="min-h-screen from-background via-background to-background flex items-center justify-center">
@@ -103,7 +88,6 @@ const ParticipantQuizPage = () => {
                   {monitoringData?.data?.totalParticipants ?? 0}
                 </span>{" "}
                 participante
-                {monitoringData?.data?.totalParticipants !== 1 ? "s" : ""}{" "}
                 {monitoringData?.data?.totalParticipants !== 1 ? "s" : ""}
               </span>
             </div>
@@ -121,12 +105,35 @@ const ParticipantQuizPage = () => {
       />
 
       <div className="max-w-2xl mx-auto">
-        {currentQuestion ? (
+        {!currentQuestion ? (
+          <Card className="border-border shadow-lg mb-6 overflow-hidden">
+            <CardHeader className="pb-6 border-b border-border">
+              <CardTitle className="text-2xl">Quiz Encerrado 🎉</CardTitle>
+              <CardDescription>Você chegou ao fim!</CardDescription>
+            </CardHeader>
+
+            <CardContent className="pt-10 pb-12">
+              <div className="flex flex-col items-center justify-center text-center gap-4">
+                <CheckCircle2 className="w-16 h-16 text-primary" />
+
+                <h3 className="text-xl font-semibold tracking-tight">
+                  Obrigado por participar!
+                </h3>
+
+                <p className="text-muted-foreground max-w-md">
+                  Todas as perguntas foram respondidas. Esperamos que tenha
+                  aproveitado o quiz!
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : currentQuestion && !isLoadingCurrentAnswer ? (
           <CardQuestion
             currentQuestion={currentQuestion}
             timeRemaining={timeRemaining}
             selectAnswer={selectAnswer}
-            userAnswerOptionId={monitoringData?.data?.userAnswerOptionId}
+            userAnswerOptionId={selectedAnswerId}
+            isSubmitting={isSubmitting}
           />
         ) : (
           <Card className="border-border shadow-lg mb-6 overflow-hidden">
@@ -144,7 +151,7 @@ const ParticipantQuizPage = () => {
                 </div>
 
                 <h3 className="text-xl font-semibold mb-2 tracking-tight">
-                  Aguardando iníciar a pergunta
+                  Aguardando iniciar a pergunta
                 </h3>
 
                 <p className="text-muted-foreground max-w-md">
@@ -157,7 +164,7 @@ const ParticipantQuizPage = () => {
         )}
 
         {/* Alerta se tempo acabou */}
-        {currentQuestion?.duration === 0 && !hasAnswered && (
+        {currentQuestion?.duration === 0 && (
           <Alert className="mb-6 bg-red-50 border-red-200">
             <AlertCircle className="h-4 w-4 text-red-600" />
             <AlertDescription className="text-red-700">
@@ -167,17 +174,14 @@ const ParticipantQuizPage = () => {
         )}
 
         {/* Alerta se não respondeu */}
-        {currentQuestion &&
-          !hasAnswered &&
-          !selectAnswer &&
-          timeRemaining > 0 && (
-            <Alert className="mb-6 bg-amber-50 border-amber-200">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-amber-700">
-                Selecione uma opção para responder a pergunta
-              </AlertDescription>
-            </Alert>
-          )}
+        {currentQuestion && !selectAnswer && timeRemaining > 0 && (
+          <Alert className="mb-6 bg-amber-50 border-amber-200">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-700">
+              Selecione uma opção para responder a pergunta
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
     </div>
   );
