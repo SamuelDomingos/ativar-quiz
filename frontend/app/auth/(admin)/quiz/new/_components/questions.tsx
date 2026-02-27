@@ -194,7 +194,6 @@ const Questions = ({
 
         <QuestionAnswers
           questionIndex={questionIndex}
-          control={form.control}
           loading={loading}
         />
       </CardContent>

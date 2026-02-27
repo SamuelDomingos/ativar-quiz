@@ -57,7 +57,7 @@ const QuestionAnswers = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {options.map((option, optionIndex) => (
+        {options.map((option: any, optionIndex: number) => (
           <div
             key={option.id || optionIndex}
             className="flex gap-2 items-center p-3 rounded-lg border border-border bg-secondary/50"
@@ -65,7 +65,7 @@ const QuestionAnswers = ({
             <FormField
               control={control}
               name={`questions.${questionIndex}.options.${optionIndex}.label`}
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem className="flex-1">
                   <FormControl>
                     <Input
@@ -89,7 +89,7 @@ const QuestionAnswers = ({
             <FormField
               control={control}
               name={`questions.${questionIndex}.options.${optionIndex}.isCorrect`}
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem className="flex items-center gap-1.5 shrink-0">
                   <Input
                     type="radio"

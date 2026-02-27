@@ -1,3 +1,5 @@
+"use server"
+
 import { NextRequest, NextResponse } from "next/server";
 import { quizService } from "../services/index.service";
 

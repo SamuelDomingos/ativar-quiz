@@ -4,6 +4,26 @@ import { useMemo } from "react";
 import { useEffect, useState } from "react";
 import { getSocket } from "@/lib/socket";
 
+export interface MonitoringData {
+  totalParticipants: number;
+  quizStatus: string;
+  questionStartedAt?: Date;
+
+  currentQuestion?: {
+    id: string;
+    options: {
+      id: string;
+    }[];
+  };
+
+  answersCount?: number;
+
+  optionCounts?: {
+    optionId: string;
+    count: number;
+  }[];
+}
+
 export const useCreateQuiz = () => {
   const {
     execute: uploadData,
@@ -48,7 +68,7 @@ export const useGetAllQuizzes = () => {
 };
 
 export const useGetQuizStatus = (quizId: string) => {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<MonitoringData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState(false);

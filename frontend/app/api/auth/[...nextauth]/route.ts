@@ -1,3 +1,5 @@
+"use server"
+
 import type { NextAuthOptions } from "next-auth";
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -18,7 +20,7 @@ const authOptions: NextAuthOptions = {
         }
 
         const user = await prisma.administrator.findUnique({
-          where: { email: credentials.email },
+          where: { email: credentials.email},
         });
 
         if (!user) {

@@ -30,7 +30,6 @@ export default function QrCode({ id }: QrCodeProps) {
     const qrCodeOptions: QRCode.QRCodeToDataURLOptions = {
       errorCorrectionLevel: "H",
       type: "image/webp",
-      quality: 0.95,
       margin: 2,
       width: 300,
       color: {

@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-const BasicInformation = ({ form, loading }) => {
+const BasicInformation = ({ form, loading }: { form: any; loading: boolean }) => {
   return (
     <Card className="border-border shadow-lg mb-8">
       <CardHeader>
@@ -33,7 +33,7 @@ const BasicInformation = ({ form, loading }) => {
         <FormField
           control={form.control}
           name="title"
-          render={({ field }) => (
+          render={({ field }: { field: any }) => (
             <FormItem>
               <FormLabel>Título do Quiz *</FormLabel>
               <FormControl>
@@ -51,7 +51,7 @@ const BasicInformation = ({ form, loading }) => {
         <FormField
           control={form.control}
           name="description"
-          render={({ field }) => (
+          render={({ field }: { field: any }) => (
             <FormItem>
               <FormLabel>Descrição *</FormLabel>
               <FormControl>

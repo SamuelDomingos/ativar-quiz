@@ -1,6 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 
-const HeaderStarted = ({ monitoringData, currentQuestion }) => {
+const HeaderStarted = ({
+  monitoringData,
+  currentQuestion,
+}: {
+  monitoringData: any;
+  currentQuestion: any;
+}) => {
   return (
     <div className="max-w-2xl mx-auto mb-8">
       <div className="flex items-center justify-between gap-4 mb-6">

@@ -7,7 +7,21 @@ export type QuizWithQuestions = Quiz & {
   })[];
 };
 
-export const createQuiz = async (data: QuizCreateInput): Promise<Quiz> => {
+export type QuizWithQuestionsCreateInput = Omit<QuizCreateInput, "questions"> & {
+  questions: {
+    title: string;
+    type: string;
+    order: number;
+    duration: number;
+    options: {
+      label: string;
+      isCorrect: boolean;
+      order: number;
+    }[];
+  }[];
+};
+
+export const createQuiz = async (data: QuizWithQuestionsCreateInput): Promise<Quiz> => {
   const response = await fetch("/api/quiz", {
     method: "POST",
     headers: {
