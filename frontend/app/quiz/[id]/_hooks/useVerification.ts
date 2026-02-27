@@ -101,11 +101,10 @@ export const useVerifyQuiz = (id: string) => {
 
       const socket = getSocket();
 
-      socket.emit("player:join", {
-        quizId: id,
-        playerId,        // 🔥 identificador único real
-        displayName: ip, // opcional (apenas visual)
-      });
+socket.emit("player:join", {
+  quizId: id,
+  userName: playerId, // 👈 agora bate com backend
+});
     }
   }, [isLoading, isLoadingIP, id, ip, getOrCreatePlayerId]);
 
