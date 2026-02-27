@@ -36,9 +36,7 @@ const CardQuestion = ({
               {currentQuestion.title}
             </CardTitle>
             <CardDescription>
-              {hasAnswered
-                ? "Você já respondeu esta questão"
-                : "Selecione uma opção abaixo"}
+              Selecione uma opção abaixo
             </CardDescription>
           </div>
           {totalDuration > 0 && (

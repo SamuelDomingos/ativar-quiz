@@ -66,7 +66,15 @@ const ParticipantQuizPage = () => {
 
   if (!currentQuestion) {
     return (
-      <div className="min-h-screen from-background via-background to-background flex items-center justify-center">
+      <div
+        className="min-h-screen from-background via-background to-background flex items-center justify-center"
+        style={{
+          backgroundImage: "url('/banners/AtivarProximaFase.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
         <Card className="border-border shadow-lg">
           <CardContent className="py-16 flex flex-col items-center">
             <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
@@ -98,7 +106,15 @@ const ParticipantQuizPage = () => {
   }
 
   return (
-    <div className="min-h-screen from-background via-background to-background p-4 md:p-6">
+    <div
+      className="min-h-screen from-background via-background to-background p-4 md:p-6"
+      style={{
+        backgroundImage: "url('/banners/logo_ativar.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
       <HeaderStarted
         monitoringData={monitoringData}
         currentQuestion={currentQuestion}

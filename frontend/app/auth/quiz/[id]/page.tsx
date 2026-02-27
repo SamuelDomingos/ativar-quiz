@@ -21,6 +21,7 @@ import { useControl } from "./_hooks/useControl";
 import { getStatusBadge } from "./_lib/status";
 import QrCode from "@/components/qrCode";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function EditQuizPage() {
   const params = useParams();
@@ -45,19 +46,12 @@ export default function EditQuizPage() {
   const IconComponent = statusBadge.Icon;
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-background via-background to-background">
+    <div className="min-h-screen bg-linear-to-br from-background via-background to-background" >
       <div className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground tracking-tight">
-                Quiz
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Teste seus conhecimentos em diversos assuntos
-              </p>
+            <div className="flex items-center justify-center">
+              <Image src="/banners/logo_ativar.png" alt="Banner" width={200} height={50} />
             </div>
-          </div>
         </div>
       </div>
 

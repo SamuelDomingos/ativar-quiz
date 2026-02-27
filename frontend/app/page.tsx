@@ -16,12 +16,18 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div
+      className="flex min-h-screen items-center justify-center"
+      style={{
+        backgroundImage: "url('/banners/bannerinicial.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-center">
-            Acessar Quiz
-          </CardTitle>
+          <CardTitle className="text-center">Acessar Quiz</CardTitle>
         </CardHeader>
 
         <CardContent className="space-y-4">

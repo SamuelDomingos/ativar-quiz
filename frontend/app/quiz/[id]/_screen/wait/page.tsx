@@ -11,7 +11,15 @@ const WaitingScreen = ({
   totalParticipants: number;
 }) => {
   return (
-    <div className="min-h-screen bg-linear-to-br from-background via-background to-background flex items-center justify-center">
+    <div
+      className="min-h-screen bg-linear-to-br from-background via-background to-background flex items-center justify-center"
+      style={{
+        backgroundImage: "url('/banners/proximaFase.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
       <div className="max-w-6xl w-full px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
           <motion.div
