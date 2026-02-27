@@ -19,7 +19,7 @@ export default function Home() {
     <div
       className="flex min-h-screen items-center justify-center"
       style={{
-        backgroundImage: "url('/banners/bannerinicial.png')",
+        backgroundImage: "url('/banners/bannerInitial.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
