@@ -1,118 +1,144 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-  FieldError,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import z from "zod";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Copy, LogOut, MoreVertical } from "lucide-react";
+import { signOut } from "next-auth/react";
+import { useGetAllQuizzes } from "./_hooks/useAdmin";
 
-const formSchema = z.object({
-  email: z.email("Invalid email address."),
-  password: z.string().min(6, "Password must be at least 6 characters long."),
-});
-
-export default function AuthPage() {
+export default function AdminPage() {
   const router = useRouter();
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-    mode: "onSubmit",
-  });
+  const { data } = useGetAllQuizzes();
 
-  const onSubmit = async (data: z.infer<typeof formSchema>) => {
-    const result = await signIn("credentials", {
-      email: data.email,
-      password: data.password,
-      redirect: false,
+  const handleLogout = async () => {
+    await signOut({
+      redirect: true,
+      callbackUrl: "/auth",
     });
-
-    if (result?.error) {
-      toast.error(result.error);
-    } else if (result?.ok) {
-      toast.success("Login realizado com sucesso!");
-      router.push("/auth/dashboard");
-    }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Login to your account</CardTitle>
-          <CardDescription>
-            Enter your email and password to access your account.
-          </CardDescription>
+    <div className="p-6 max-w-5xl mx-auto space-y-6">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="default"
+            className="ml-auto block"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Sair</TooltipContent>
+      </Tooltip>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Administração de Quizzes</CardTitle>
+
+          <Button onClick={() => router.push("/auth/quiz/new")}>
+            Criar Quiz
+          </Button>
         </CardHeader>
+
         <CardContent>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <FieldGroup>
-              <Controller
-                name="email"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="email">Email</FieldLabel>
-                    <Input
-                      {...field}
-                      id="email"
-                      type="email"
-                      placeholder="m@example.com"
-                      aria-invalid={fieldState.invalid}
-                      required
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
-              />
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Código</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
 
-              <Controller
-                name="password"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="password">Password</FieldLabel>
+            <TableBody>
+              {data && data.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center">
+                    Nenhum quiz criado ainda.
+                  </TableCell>
+                </TableRow>
+              )}
+              {data?.map((quiz) => (
+                <TableRow
+                  key={quiz.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/auth/quiz/${quiz.id}`)}
+                >
+                  <TableCell>{quiz.title}</TableCell>
+                  <TableCell>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(quiz.id);
+                          }}
+                          variant="outline"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Copiar código</TooltipContent>
+                    </Tooltip>
+                  </TableCell>
 
-                    <Input
-                      {...field}
-                      id="password"
-                      aria-invalid={fieldState.invalid}
-                      type="password"
-                      required
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
-              />
-
-              <Field>
-                <Button type="submit">Login</Button>
-              </Field>
-            </FieldGroup>
-          </form>
+                  <TableCell
+                    className="text-right space-x-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              router.push(`/admin/quiz/${quiz.id}`)
+                            }
+                          >
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />{" "}
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => console.log("Excluir", quiz.id)}
+                          >
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>
