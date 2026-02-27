@@ -1,5 +1,5 @@
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { getSocket } from "@/lib/socket";
 import { useUserIP } from "@/hooks/useUserIP";
 
@@ -26,18 +26,37 @@ export const useVerifyQuiz = (id: string) => {
 
   const hasJoinedRef = useRef(false);
   const shouldJoinRef = useRef(false);
-  const quizStatusRef = useRef<string | null>(null);
 
+  /**
+   * 🔐 Gera ID único por navegador (persistente)
+   */
+  const getOrCreatePlayerId = useCallback(() => {
+    if (typeof window === "undefined") return null;
+
+    let playerId = localStorage.getItem("playerId");
+
+    if (!playerId) {
+      playerId = crypto.randomUUID();
+      localStorage.setItem("playerId", playerId);
+    }
+
+    return playerId;
+  }, []);
+
+  /**
+   * 📡 Buscar dados do quiz
+   */
   useEffect(() => {
     if (!id) return;
 
     const socket = getSocket();
+
     socket.emit("monitoring:get-quiz-data", { quizId: id });
 
     socket.on("monitoring:quiz-data", (monitoringData: any) => {
       if (monitoringData.success && monitoringData.data) {
         const status = monitoringData.data.quizStatus;
-        quizStatusRef.current = status;
+
         setData(monitoringData.data);
         setIsLoading(false);
 
@@ -65,20 +84,34 @@ export const useVerifyQuiz = (id: string) => {
     };
   }, [id, router]);
 
+  /**
+   * 🚀 Entrar no quiz automaticamente
+   */
   useEffect(() => {
     if (
       !isLoading &&
       !isLoadingIP &&
-      ip &&
       shouldJoinRef.current &&
       !hasJoinedRef.current
     ) {
-      hasJoinedRef.current = true;
-      const socket = getSocket();
-      socket.emit("player:join", { quizId: id, userName: ip });
-    }
-  }, [isLoading, isLoadingIP, ip, id]);
+      const playerId = getOrCreatePlayerId();
+      if (!playerId) return;
 
+      hasJoinedRef.current = true;
+
+      const socket = getSocket();
+
+      socket.emit("player:join", {
+        quizId: id,
+        playerId,        // 🔥 identificador único real
+        displayName: ip, // opcional (apenas visual)
+      });
+    }
+  }, [isLoading, isLoadingIP, id, ip, getOrCreatePlayerId]);
+
+  /**
+   * 🎧 Eventos do player
+   */
   useEffect(() => {
     const socket = getSocket();
 
@@ -98,7 +131,7 @@ export const useVerifyQuiz = (id: string) => {
       socket.off("player:joined");
       socket.off("player:error");
     };
-  }, [id, router]);
+  }, []);
 
   return {
     data,

@@ -46,11 +46,40 @@ const quizController = async ({
     include: { sessions: true },
   });
 
-  if (command === "PAUSED") {
-    await prisma.quizSession.deleteMany({
+if (command === "PAUSED") {
+  await prisma.$transaction(async (tx) => {
+    // 1️⃣ Buscar todas as sessões do quiz
+    const sessions = await tx.quizSession.findMany({
+      where: { quizId: idQuiz },
+      select: { id: true },
+    });
+
+    const sessionIds = sessions.map((s) => s.id);
+
+    // 2️⃣ Deletar todas as respostas dessas sessões
+    await tx.userAnswer.deleteMany({
+      where: {
+        sessionId: { in: sessionIds },
+      },
+    });
+
+    // 3️⃣ Agora deletar as sessões
+    await tx.quizSession.deleteMany({
       where: { quizId: idQuiz },
     });
-  }
+
+    // 4️⃣ Atualizar status do quiz
+    await tx.quiz.update({
+      where: { id: idQuiz },
+      data: { status: "PAUSED" },
+    });
+  });
+
+  return {
+    status: "PAUSED",
+    activeSessions: 0,
+  };
+}
 
   return {
     status: quiz.status,

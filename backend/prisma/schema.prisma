@@ -91,7 +91,7 @@ model UserAnswer {
   questionId String
   optionId   String
 
-  session  QuizSession    @relation(fields: [sessionId], references: [id])
+  session  QuizSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   question Question       @relation(fields: [questionId], references: [id])
   option   QuestionOption @relation(fields: [optionId], references: [id])
 
