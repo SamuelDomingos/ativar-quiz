@@ -1,101 +1,114 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/lib/prisma"
+    provider = "prisma-client"
+    output   = "../src/generated"
 }
 
 datasource db {
-  provider = "postgresql"
+    provider = "postgresql"
 }
 
-model Administrator {
-  id       String @id @default(uuid())
-  name     String
-  email    String @unique
-  password String
+model User {
+    id        String    @id @default(uuid())
+    name      String?
+    email     String?   @unique()
+    password  String?
+    avatar    String?
+    createdAt DateTime  @default(now())
+    updatedAt DateTime?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+    quizzes   Quiz[]
+    games     Game[]
+    players   Player[]
 }
 
 model Quiz {
-  id          String     @id @default(uuid())
-  title       String
-  description String?
-  status      QuizStatus @default(WAITING)
+    id          String     @id @default(uuid())
+    title       String
+    description String?
+    coverUrl    String?
+    userId      String
+    user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+    questions   Question[]
+    games       Game[]
+    createdAt   DateTime   @default(now())
+    updatedAt   DateTime   @updatedAt
 
-  currentQuestionId String?
-  questionStartedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  questions Question[]
-  sessions  QuizSession[]
-}
-
-enum QuizStatus {
-  WAITING
-  STARTED
-  PAUSED
-  FINISHED
+    @@index([userId])
 }
 
 model Question {
-  id     String @id @default(uuid())
-  quizId String
-  quiz   Quiz   @relation(fields: [quizId], references: [id])
+    id        String       @id @default(uuid())
+    quizId    String
+    quiz      Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+    text      String
+    imageUrl  String?
+    type      QuestionType @default(SINGLE)
+    options   Option[]
+    answers   Answer[]
+    createdAt DateTime     @default(now())
+    updatedAt DateTime     @updatedAt
 
-  title    String
-  type     QuestionType
-  order    Int
-  duration Int?
-
-  options QuestionOption[]
-  answers UserAnswer[]
-
-  createdAt DateTime @default(now())
+    @@index([quizId])
 }
 
 enum QuestionType {
-  TRUE_FALSE
-  SINGLE_CHOICE
+    SINGLE
+    MULTIPLE
 }
 
-model QuestionOption {
-  id         String   @id @default(uuid())
-  questionId String
-  question   Question @relation(fields: [questionId], references: [id])
+model Option {
+    id         String   @id @default(uuid())
+    questionId String
+    question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+    text       String
+    isCorrect  Boolean
+    createdAt  DateTime @default(now())
 
-  label     String
-  isCorrect Boolean
-
-  order Int
-
-  answers UserAnswer[]
+    @@index([questionId])
 }
 
-model QuizSession {
-  id     String @id @default(uuid())
-  quizId String
-  quiz   Quiz   @relation(fields: [quizId], references: [id])
+model Game {
+    id        String   @id @default(uuid())
+    code      String   @unique @db.VarChar(6)
+    quizId    String
+    quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+    hostId    String
+    host      User     @relation(fields: [hostId], references: [id], onDelete: Cascade)
+    players   Player[]
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-  userName String
-  joinedAt DateTime @default(now())
-
-  answers UserAnswer[]
+    @@index([quizId])
+    @@index([hostId])
 }
 
-model UserAnswer {
-  id         String @id @default(uuid())
-  sessionId  String
-  questionId String
-  optionId   String
+model Player {
+    id       String @id @default(uuid())
+    gameId   String
+    game     Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+    userId   String?
+    user     User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+    name     String
+    avatar   String
+    score    Int    @default(0)
+    answers  Answer[]
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-  session  QuizSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  question Question       @relation(fields: [questionId], references: [id])
-  option   QuestionOption @relation(fields: [optionId], references: [id])
+    @@index([gameId])
+    @@index([userId])
+}
 
-  answeredAt DateTime @default(now())
+model Answer {
+    id         String   @id @default(uuid())
+    playerId   String
+    player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+    questionId String
+    question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+    selected   String[]
+    isCorrect  Boolean
+    createdAt  DateTime @default(now())
 
-  @@unique([sessionId, questionId])
+    @@index([playerId])
+    @@index([questionId])
 }

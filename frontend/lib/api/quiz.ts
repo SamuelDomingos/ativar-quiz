@@ -1,60 +1,79 @@
-import { Question, QuestionOption, Quiz } from "../generated/prisma/client";
-import { QuizCreateInput } from "../generated/prisma/models";
+import { CreateQuizDto, Quiz } from "./interfaces/quiz.interfaces"
 
-export type QuizWithQuestions = Quiz & {
-  questions: (Question & {
-    options: QuestionOption[];
-  })[];
-};
+export const getQuizzes = async (page = 1, limit = 10): Promise<Quiz[]> => {
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/quiz?page=${page}&limit=${limit}`
+  )
 
-export type QuizWithQuestionsCreateInput = Omit<QuizCreateInput, "questions"> & {
-  questions: {
-    title: string;
-    type: string;
-    order: number;
-    duration: number;
-    options: {
-      label: string;
-      isCorrect: boolean;
-      order: number;
-    }[];
-  }[];
-};
+  if (!response.ok) {
+    const err = await response.json()
+    throw new Error(err?.error ?? "Erro ao buscar quizzes")
+  }
 
-export const createQuiz = async (data: QuizWithQuestionsCreateInput): Promise<Quiz> => {
-  const response = await fetch("/api/quiz", {
+  return response.json()
+}
+
+export const getQuiz = async (id: string): Promise<Quiz> => {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quiz/${id}`)
+
+  if (!response.ok) {
+    const err = await response.json()
+    throw new Error(err?.error ?? "Quiz não encontrado")
+  }
+
+  return response.json()
+}
+
+export const createQuiz = async (payload: CreateQuizDto): Promise<Quiz> => {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quiz`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(data),
-  });
+    body: JSON.stringify(payload),
+  })
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Erro ao criar GC");
+    const err = await response.json()
+    throw new Error(err?.error ?? "Erro ao criar quiz")
   }
 
-  return response.json();
-};
+  return response.json()
+}
 
-export const getAllQuizzes = async (): Promise<Quiz[]> => {
-  const response = await fetch(`/api/quiz`, {
-    method: "GET",
-  });
-  return response.json();
-};
+export const updateQuiz = async (
+  id: string,
+  payload: Partial<CreateQuizDto>
+): Promise<Quiz> => {
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/quiz/${id}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  )
 
-export const getQuizById = async (id: string): Promise<QuizWithQuestions> => {
-  const response = await fetch(`/api/quiz/${id}`, {
-    method: "GET",
-  });
-  return response.json();
-};
+  if (!response.ok) {
+    const err = await response.json()
+    throw new Error(err?.error ?? "Erro ao atualizar quiz")
+  }
 
-export const deleteRegister = async (id: string) => {
-  const response = await fetch(`/api/quiz?id=${id}`, {
-    method: "DELETE",
-  });
-  return response.json();
-};
+  return response.json()
+}
+
+export const deleteQuiz = async (id: string): Promise<void> => {
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/quiz/${id}`,
+    {
+      method: "DELETE",
+    }
+  )
+
+  if (!response.ok) {
+    const err = await response.json()
+    throw new Error(err?.error ?? "Erro ao remover quiz")
+  }
+}
